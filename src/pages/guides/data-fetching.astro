@@ -1,0 +1,386 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Récupération de Données">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Patterns de Récupération de Données
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Guide complet sur les différentes stratégies de fetch de données dans l'application
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Les 3 Patterns Principaux
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">
+┌──────────────────────────────────────────────────────────┐
+│              PATTERNS DE DATA FETCHING                    │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+│  1. SSR (Server-Side Rendering)                          │
+│     • Dans le frontmatter Astro                          │
+│     • Fetch côté serveur au build/request                │
+│     • Données injectées dans HTML                        │
+│     • ✅ SEO optimal, performance                        │
+│                                                           │
+│  2. API Routes                                           │
+│     • Endpoints /api/*                                   │
+│     • Appelés depuis le client (fetch)                   │
+│     • ✅ Actions utilisateur, mutations                  │
+│                                                           │
+│  3. Client-Side (useEffect)                              │
+│     • Dans composants Preact                             │
+│     • Fetch après hydratation                            │
+│     • ✅ Données dynamiques, temps réel                  │
+│                                                           │
+└──────────────────────────────────────────────────────────┘
+      </pre>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      1. SSR - Server-Side Rendering
+    </h2>
+
+    <Callout type="success">
+      Le pattern <strong>recommandé par défaut</strong> pour afficher des données au chargement initial de la page.
+    </Callout>
+
+    <div class="mt-6 space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Cas d'usage
+        </h3>
+        <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+          <li>• Affichage de produits sur une page catégorie</li>
+          <li>• Détails d'un produit</li>
+          <li>• Contenu CMS (banners, menus, pages)</li>
+          <li>• Liste de produits recommandés</li>
+          <li>• Tout ce qui doit être indexé par les moteurs de recherche</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Exemple : Page Produit
+        </h3>
+        <CodeBlock
+          title="pages/product/[id].astro"
+          lang="astro"
+          code={"---\nimport Layout from \"../../layouts/Layout.astro\";\nimport { getProductInStoreWithColors } from \"../../lib/services/product.service\";\nimport { ProductGallery } from \"../../features/product/ProductGallery\";\nimport { AddToCartButton } from \"../../features/cart/AddToCartButton\";\n\n// 1. Récupération des paramètres URL\nconst { id } = Astro.params;\n\n// 2. Fetch côté serveur (SSR)\nconst product = await getProductInStoreWithColors(id);\n\n// 3. Gestion erreur 404\nif (!product) {\n  return Astro.redirect(\"/404\");\n}\n\n// 4. Métadonnées SEO\nconst seoTitle = `${product.name} - Boutique`;\n---\n\n<Layout title={seoTitle}>\n  <!-- HTML statique généré côté serveur -->\n  <div class=\"container mx-auto px-4 py-8\">\n    <h1 class=\"text-3xl font-bold mb-4\">{product.name}</h1>\n    <p class=\"text-2xl text-purple-600 mb-6\">{product.price}€</p>\n\n    <!-- Island : hydraté quand visible -->\n    <ProductGallery\n      images={product.images}\n      client:visible\n    />\n\n    <!-- Island : hydraté immédiatement -->\n    <AddToCartButton\n      productId={product.id}\n      variantId={product.masterVariant.id}\n      client:load\n    />\n\n    <!-- HTML statique -->\n    <div class=\"mt-8 prose\">\n      {product.description}\n    </div>\n  </div>\n</Layout>"}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Avantages SSR
+        </h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Performance</h4>
+            <p class="text-sm text-green-800 dark:text-green-200">
+              HTML complet envoyé immédiatement. Pas d'attente JavaScript.
+            </p>
+          </div>
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">SEO</h4>
+            <p class="text-sm text-green-800 dark:text-green-200">
+              Contenu crawlable par les moteurs de recherche.
+            </p>
+          </div>
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Sécurité</h4>
+            <p class="text-sm text-green-800 dark:text-green-200">
+              API tokens jamais exposés au client.
+            </p>
+          </div>
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Fiabilité</h4>
+            <p class="text-sm text-green-800 dark:text-green-200">
+              Fonctionne même si JavaScript est désactivé.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      2. API Routes
+    </h2>
+
+    <Callout type="info">
+      Utilisé pour les <strong>actions utilisateur</strong> et les <strong>mutations</strong>. Deux variantes existent selon le domaine :
+    </Callout>
+
+    <div class="mt-6 space-y-4">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Cas d'usage
+        </h3>
+        <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+          <li>• <strong>Panier / Wishlist</strong> → API Routes Astro (<code>/api/cart/add</code>, <code>/api/wishlist/toggle</code>)</li>
+          <li>• <strong>Auth / Customer</strong> → BFF direct via <code>apiFetch()</code> (<code>POST /auth/signin</code>, <code>GET /customer/me</code>...)</li>
+          <li>• Soumettre un formulaire</li>
+          <li>• Tout ce qui modifie des données</li>
+        </ul>
+      </div>
+
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <strong>Panier / Wishlist :</strong> Le composant Preact fait un <code>fetch("/api/cart/add")</code> vers une API Route Astro. Celle-ci valide la requête, appelle le Service Layer, puis retourne la réponse JSON.
+        </p>
+      </div>
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+        <p class="text-sm text-orange-800 dark:text-orange-200">
+          <strong>Auth / Customer :</strong> Le Signal Store appelle directement le BFF via <code>lib/api/auth.ts</code> ou <code>lib/api/customer.ts</code>. Ex : <code>signIn(email, password)</code> → <code>POST /auth/signin</code>. Pas d'API Route Astro dans ce flux.
+        </p>
+      </div>
+
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Voir les exemples de code complets : <a href="/examples/api-routes" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Exemples API Routes</a>, <a href="/examples/signals" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Exemples Signals Stores</a> et <a href="/stack/commercetools" class="text-orange-600 dark:text-orange-400 underline hover:text-orange-800 dark:hover:text-orange-300">CommerceTools → Routes BFF</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      3. State local (useState)
+    </h2>
+
+    <Callout type="info">
+      À utiliser pour un état <strong>isolé à un seul composant</strong> (ou ses enfants directs) qui n'a pas besoin d'être partagé.
+    </Callout>
+
+    <div class="mt-6 space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Cas d'usage
+        </h3>
+        <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+          <li>• États <strong>éphémères</strong> : <code>isLoading</code>, <code>errorMessage</code></li>
+          <li>• Sélections <strong>temporaires</strong> : <code>selectedSize</code>, <code>quantity</code></li>
+          <li>• Données isolées à un composant (non partagées)</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Exemple : state local dans un sélecteur de taille
+        </h3>
+        <CodeBlock
+          title="components/features/SizeSelector.tsx"
+          lang="tsx"
+          code={`import { useState } from "preact/hooks";
+import { addToCart } from "../../signals/cart";
+
+export function SizeSelector({ product }) {
+  // State local : isolé à ce composant
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleAddToCart = async () => {
+    if (!selectedSize) {
+      setErrorMessage("Veuillez choisir une taille");
+      return;
+    }
+    setIsLoading(true);
+    await addToCart({ ...product, size: selectedSize }); // Signal : action partagée
+    setIsLoading(false);
+  };
+
+  return (
+    <div>
+      <div class="flex gap-2">
+        {product.sizes.map(size => (
+          <button
+            key={size}
+            class={selectedSize === size ? "border-black" : "border-gray-300"}
+            onClick={() => { setSelectedSize(size); setErrorMessage(""); }}
+          >
+            {size}
+          </button>
+        ))}
+      </div>
+      {errorMessage && <p class="text-red-500 text-sm">{errorMessage}</p>}
+      <button onClick={handleAddToCart} disabled={isLoading}>
+        {isLoading ? "..." : "Ajouter au panier"}
+      </button>
+    </div>
+  );
+}`}
+        />
+
+        <Callout type="warning">
+          <strong>Attention :</strong> le panier, la session utilisateur, les filtres PLP... sont des états <strong>partagés entre composants non liés</strong> → utiliser un <strong>Signal</strong>, pas un state local.
+        </Callout>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Signal vs State local (useState) : lequel choisir ?
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="p-5 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-purple-300 dark:border-purple-700">
+        <h3 class="text-lg font-bold text-purple-700 dark:text-purple-300 mb-3">Signal</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
+          State <strong>global et partagé</strong> entre plusieurs composants non liés. Vit dans <code>signals/</code>.
+        </p>
+        <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+          <p><strong>Utilise un Signal si :</strong></p>
+          <ul class="space-y-1 ml-3">
+            <li>- L'état est <strong>partagé entre plusieurs composants non liés</strong></li>
+            <li>- L'état <strong>persiste entre les pages</strong> (panier, user)</li>
+            <li>- L'état doit être <strong>accessible depuis n'importe où</strong> (pas de prop drilling)</li>
+          </ul>
+          <p class="mt-2"><strong>Exemples :</strong> <code>cart</code>, <code>user</code>, <code>filters</code>, <code>isMenuOpen</code></p>
+        </div>
+      </div>
+
+      <div class="p-5 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border-2 border-cyan-300 dark:border-cyan-700">
+        <h3 class="text-lg font-bold text-cyan-700 dark:text-cyan-300 mb-3">State local (useState)</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
+          State <strong>isolé à un seul composant</strong> (ou ses enfants directs). Disparaît au démontage.
+        </p>
+        <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+          <p><strong>Utilise un useState si :</strong></p>
+          <ul class="space-y-1 ml-3">
+            <li>- L'état est <strong>isolé à un seul composant</strong> (ou ses enfants directs)</li>
+            <li>- L'état <strong>n'a pas besoin d'être partagé</strong> ailleurs</li>
+            <li>- C'est un état <strong>éphémère</strong> (loading, erreur, sélection temporaire)</li>
+          </ul>
+          <p class="mt-2"><strong>Exemples :</strong> <code>selectedSize</code>, <code>quantity</code>, <code>isLoading</code>, <code>errorMessage</code></p>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      Pattern : Signal + State local dans le même composant
+    </h3>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Un composant peut utiliser <strong>les deux</strong> : un Signal pour l'action partagée + un state local pour l'état éphémère.
+    </p>
+
+    <CodeBlock
+      title="components/features/AddToCartButton.tsx"
+      lang="tsx"
+      code={`import { addToCart } from "../../signals/cart";
+
+export function AddToCartButton({ product }) {
+  // State local : loading éphémère, isolé à ce bouton
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    await addToCart(product);  // Signal : action partagée (met à jour cart.value)
+    setIsLoading(false);
+  };
+
+  return (
+    <button onClick={handleClick}>
+      {isLoading ? "..." : "Ajouter au panier"}
+    </button>
+  );
+}`}
+    />
+
+    <Callout type="danger" title="Anti-pattern : prop drilling inutile">
+      Ne passez <strong>pas</strong> les actions Signal en props. Importez-les directement dans le composant qui en a besoin.
+    </Callout>
+
+    <div class="grid md:grid-cols-2 gap-4 mt-4">
+      <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h4 class="font-semibold text-red-900 dark:text-red-100 mb-2">&#x274C; MAUVAIS</h4>
+        <pre class="text-xs font-mono text-red-800 dark:text-red-200 overflow-x-auto whitespace-pre !bg-transparent !p-0">{`// Prop drilling inutile
+<ProductCard
+  product={p}
+  onAddToCart={addToCart}
+/>`}</pre>
+      </div>
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">&#x2705; BON</h4>
+        <pre class="text-xs font-mono text-green-800 dark:text-green-200 overflow-x-auto whitespace-pre !bg-transparent !p-0">{`// Import direct du signal
+import { addToCart } from "../../signals/cart";
+// Puis utiliser addToCart() directement`}</pre>
+      </div>
+    </div>
+
+    <div class="p-4 mt-6 bg-gradient-to-r from-purple-50 to-cyan-50 dark:from-purple-900/20 dark:to-cyan-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+      <h4 class="font-bold text-gray-900 dark:text-white mb-3">Règle de décision rapide</h4>
+      <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+        <div class="flex items-start gap-2">
+          <span class="font-bold text-purple-600 dark:text-purple-400 mt-0.5">?</span>
+          <p>État <strong>partagé entre composants non liés</strong> ? → <code class="text-purple-600 dark:text-purple-300">Signal</code></p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="font-bold text-purple-600 dark:text-purple-400 mt-0.5">?</span>
+          <p>État qui <strong>persiste entre les pages</strong> ? → <code class="text-purple-600 dark:text-purple-300">Signal</code></p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="font-bold text-purple-600 dark:text-purple-400 mt-0.5">?</span>
+          <p>État <strong>isolé / éphémère</strong> (loading, sélection, erreur) ? → <code class="text-cyan-600 dark:text-cyan-300">useState</code></p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="font-bold text-purple-600 dark:text-purple-400 mt-0.5">?</span>
+          <p>Donnée <strong>critique pour le SEO</strong> ? → Ni l'un ni l'autre : <code>SSR</code> dans le frontmatter</p>
+        </div>
+      </div>
+    </div>
+
+    <Callout type="warning">
+      <strong>Piège courant :</strong> ne pas utiliser <code>useState</code> pour du state qui devrait être partagé. Si le MiniCart et le Header doivent afficher le nombre d'articles, c'est un <strong>Signal</strong> (<code>cart</code>), pas un state local dupliqué dans chaque composant.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <Callout type="info">
+      Pour le tableau récapitulatif complet (SSR, API Routes, Signal + BFF, useEffect, Signal Store), voir <a href="/architecture/data-flow#quand-utiliser-quoi" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Flux de Données → Quand Utiliser Quoi ?</a>
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Règle d'Or
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+      <p class="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-4">
+        Par défaut, toujours utiliser le SSR
+      </p>
+      <p class="text-purple-800 dark:text-purple-200">
+        N'utiliser les API Routes ou useEffect que si vous avez une raison spécifique (action utilisateur, données temps réel, etc.).
+      </p>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/stack/tailwind"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Tailwind CSS</div>
+    </a>
+    <a
+      href="/guides/live-preview"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Live Preview →</div>
+    </a>
+  </div>
+</DocsLayout>

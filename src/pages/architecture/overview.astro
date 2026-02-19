@@ -1,0 +1,117 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Architecture - Vue d'ensemble">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Architecture du Projet
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Découvrez l'architecture Islands d'Astro et comment elle optimise les performances
+  </p>
+
+  <!-- Islands Architecture -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Islands Architecture
+    </h2>
+
+    <Callout type="info" title="Concept clé">
+      L'<strong>Islands Architecture</strong> génère du HTML statique par défaut et ajoute l'interactivité JavaScript uniquement là où c'est nécessaire, créant des "îles" d'interactivité dans un océan de contenu statique.
+    </Callout>
+
+    <div class="my-8 p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">
+┌─────────────────────────────────────────────────────────────────┐
+│                    PAGE ASTRO (SSR)                             │
+│                   HTML statique, SEO                            │
+│  ┌─────────┐  ┌─────────────┐  ┌──────────────────────┐        │
+│  │  Header │  │   Product   │  │   ProductGallery     │        │
+│  │ (Astro) │  │   (Astro)   │  │     (Preact)         │        │
+│  │ Static  │  │   Static    │  │  client:visible      │        │
+│  └─────────┘  └─────────────┘  │  ↓ Hydraté au        │        │
+│                                 │    scroll            │        │
+│  ┌──────────────────────────┐  └──────────────────────┘        │
+│  │   AddToCart (Preact)     │                                   │
+│  │     client:load          │  ← Hydraté immédiatement          │
+│  │  (critique conversion)   │    (JS critique)                  │
+│  └──────────────────────────┘                                   │
+│                                                                  │
+│  Résultat : HTML rapide + JS minimal + interactivité ciblée     │
+└─────────────────────────────────────────────────────────────────┘
+      </pre>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Pour les détails sur les directives d'hydratation (<code>client:load</code>, <code>client:visible</code>, <code>client:idle</code>...) et les best practices, voir <a href="/architecture/islands" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Islands Architecture en détail</a>.
+    </p>
+  </section>
+
+  <!-- Structure du projet -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Structure du Projet
+    </h2>
+
+    <CodeBlock
+      title="Organisation des fichiers"
+      lang="bash"
+      code={`src/
+├── assets/              # Icons par marque
+│   └── icons/{brand}/
+│
+├── components/          # Design System (60+ composants)
+│   ├── Button.tsx
+│   └── Button.props.ts
+│
+├── config/
+│   └── brands.ts        # Configuration multi-marques
+│
+├── features/            # Features métier
+│   ├── auth/            # Authentification
+│   ├── cart/            # Panier
+│   ├── product/         # Fiche produit
+│   └── layout/          # Header, Footer
+│
+├── lib/
+│   ├── api/             # Appels HTTP (SERVER-ONLY)
+│   │   ├── commercetools.ts
+│   │   └── contentstack.ts
+│   │
+│   ├── domain/          # Transformation CT → UI
+│   │   ├── product.ts
+│   │   └── cart.ts
+│   │
+│   ├── services/        # Orchestration
+│   │   ├── product.service.ts
+│   │   └── cart.service.ts
+│   │
+│   └── signals/         # State client
+│       ├── cart.store.ts
+│       └── auth.store.ts
+│
+└── pages/               # Routes
+    ├── index.astro
+    ├── product/[id].astro
+    └── api/             # API endpoints
+        └── cart/`}
+    />
+
+    <Callout type="warning" title="Règle importante">
+      Les <strong>Signals</strong> ne fonctionnent que côté client (browser). Ne jamais les utiliser dans les pages Astro (frontmatter), services, ou API layers.
+    </Callout>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/architecture/islands"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Islands Architecture en détail →</div>
+    </a>
+  </div>
+</DocsLayout>

@@ -1,0 +1,24 @@
+---
+interface Props {
+  code: string;
+  lang?: string;
+  title?: string;
+}
+
+const { code, lang = 'typescript', title } = Astro.props;
+---
+
+<div class="code-block my-6">
+  {title && (
+    <div class="bg-gray-800 text-gray-300 px-4 py-2 text-sm font-medium rounded-t-lg border-b border-gray-700">
+      {title}
+    </div>
+  )}
+  <pre class={title ? 'rounded-t-none' : ''}><code class={`language-${lang}`}>{code.trim()}</code></pre>
+</div>
+
+<style>
+  .code-block pre {
+    margin: 0;
+  }
+</style>

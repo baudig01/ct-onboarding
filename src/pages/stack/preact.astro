@@ -1,0 +1,380 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Preact & Signals">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Preact & Preact Signals
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Composants UI légers (3KB) et state management réactif
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pourquoi Preact ?
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-bold text-blue-900 dark:text-blue-100 mb-3">React</h3>
+        <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+          <li>• Bundle : ~45KB (min+gzip)</li>
+          <li>• API complète</li>
+          <li>• Écosystème énorme</li>
+        </ul>
+      </div>
+
+      <div class="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-bold text-green-900 dark:text-green-100 mb-3">Preact ✓</h3>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-2">
+          <li>• Bundle : <strong>~3KB</strong> (min+gzip)</li>
+          <li>• API 100% compatible React</li>
+          <li>• Performance optimale</li>
+        </ul>
+      </div>
+    </div>
+
+    <Callout type="success">
+      Preact offre la même API que React mais avec un bundle <strong>15x plus léger</strong>. Parfait pour les Islands !
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Preact Signals : State Management
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-6">
+      Les Signals sont des valeurs réactives. Quand un signal change, les composants qui l'utilisent se re-rendent automatiquement.
+    </p>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-600 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">
+┌──────────────────────────────────────────────┐
+│            PREACT SIGNALS                    │
+├──────────────────────────────────────────────┤
+│                                              │
+│   ┌──────────────┐                          │
+│   │   signal()   │  ← État primitif         │
+│   │  cart.value  │                          │
+│   └──────┬───────┘                          │
+│          │                                   │
+│          ▼                                   │
+│   ┌──────────────┐                          │
+│   │  computed()  │  ← Valeur dérivée        │
+│   │ totalItems   │     (recalculée auto)    │
+│   └──────┬───────┘                          │
+│          │                                   │
+│          ▼                                   │
+│   ┌──────────────────────────────────────┐  │
+│   │       COMPOSANTS                     │  │
+│   │  ┌────┐  ┌────┐  ┌────┐            │  │
+│   │  │Head│  │Cart│  │Mini│            │  │
+│   │  │er  │  │Page│  │Cart│  ...       │  │
+│   │  └────┘  └────┘  └────┘            │  │
+│   └──────────────────────────────────────┘  │
+│                                              │
+│   Quand cart.value change →                 │
+│   tous les composants se re-rendent         │
+│                                              │
+└──────────────────────────────────────────────┘
+      </pre>
+    </div>
+
+    <CodeBlock
+      title="signals/cart.ts"
+      lang="typescript"
+      code={`import { signal, computed } from "@preact/signals";
+
+// STATE — valeurs réactives (noms descriptifs)
+export const cart = signal<Cart | null>(null);
+export const cartCount = computed(() =>
+  cart.value?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0
+);
+export const cartTotal = computed(() =>
+  cart.value?.items.reduce((sum, i) => sum + i.price * i.quantity, 0) ?? 0
+);
+
+// ACTIONS — fonctions en camelCase
+export async function addToCart(item) { ... }
+export async function removeFromCart(id) { ... }
+export function clearCart() { cart.value = null; }`}
+    />
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Voir l'implémentation complète (cart, wishlist) sur la page <a href="/examples/signals" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Exemples Signals Stores</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Signal vs State local (useState)
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="p-5 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-purple-300 dark:border-purple-700">
+        <h3 class="text-lg font-bold text-purple-700 dark:text-purple-300 mb-3">Signal</h3>
+        <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+          <li>• État <strong>partagé entre composants non liés</strong></li>
+          <li>• <strong>Persiste entre les pages</strong> (panier, user)</li>
+          <li>• Accessible depuis n'importe où (<strong>pas de prop drilling</strong>)</li>
+        </ul>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-3"><strong>Ex :</strong> <code>cart</code>, <code>user</code>, <code>filters</code>, <code>isMenuOpen</code></p>
+      </div>
+      <div class="p-5 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border-2 border-cyan-300 dark:border-cyan-700">
+        <h3 class="text-lg font-bold text-cyan-700 dark:text-cyan-300 mb-3">State local (useState)</h3>
+        <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+          <li>• État <strong>isolé à un seul composant</strong> (ou enfants directs)</li>
+          <li>• N'a <strong>pas besoin d'être partagé</strong> ailleurs</li>
+          <li>• États <strong>éphémères</strong> (loading, erreur, sélection temporaire)</li>
+        </ul>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-3"><strong>Ex :</strong> <code>selectedSize</code>, <code>quantity</code>, <code>isLoading</code>, <code>errorMessage</code></p>
+      </div>
+    </div>
+
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      Les deux ensemble : Signal + state local
+    </h3>
+
+    <CodeBlock
+      title="components/features/AddToCartButton.tsx"
+      lang="tsx"
+      code={`import { addToCart } from "../../signals/cart";
+
+export function AddToCartButton({ product }) {
+  // State local : loading éphémère, isolé à ce bouton
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    await addToCart(product);  // Signal : action partagée
+    setIsLoading(false);
+  };
+
+  return (
+    <button onClick={handleClick}>
+      {isLoading ? "..." : "Ajouter"}
+    </button>
+  );
+}`}
+    />
+
+    <div class="grid md:grid-cols-2 gap-4 mt-4 mb-4">
+      <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1 text-sm">Naming state local</h4>
+        <pre class="text-xs font-mono text-green-800 dark:text-green-200 !bg-transparent !p-0">{`const [selectedSize, setSelectedSize] = useState(null);
+const [isLoading, setIsLoading] = useState(false);`}</pre>
+      </div>
+      <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h4 class="font-semibold text-red-900 dark:text-red-100 mb-1 text-sm">Noms trop vagues</h4>
+        <pre class="text-xs font-mono text-red-800 dark:text-red-200 !bg-transparent !p-0">{`const [size, setSize] = useState(null);
+const [loading, setLoading] = useState(false);`}</pre>
+      </div>
+    </div>
+
+    <Callout type="info">
+      Pour la comparaison détaillée avec règles de décision, voir <a href="/guides/data-fetching#signal-vs-state-local" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Patterns de fetch → Signal vs State local</a>.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Règles Importantes
+    </h2>
+
+    <Callout type="danger">
+      Les Signals ne fonctionnent que <strong>côté client</strong> (browser). Ne jamais les utiliser dans :
+      <ul class="mt-2 space-y-1">
+        <li>• Pages Astro (frontmatter)</li>
+        <li>• lib/services/*.ts</li>
+        <li>• lib/api/*.ts (côté serveur)</li>
+      </ul>
+    </Callout>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-6">
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Fichiers autorisés</h3>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-1">
+          <li>• signals/*.ts</li>
+          <li>• components/**/*.tsx</li>
+        </ul>
+      </div>
+
+      <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h3 class="font-semibold text-red-900 dark:text-red-100 mb-2">Fichiers interdits</h3>
+        <ul class="text-sm text-red-800 dark:text-red-200 space-y-1">
+          <li>• pages/*.astro (frontmatter)</li>
+          <li>• lib/services/*.ts</li>
+          <li>• lib/api/*.ts (serveur)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <Callout type="info">
+      Pour des exemples complets (Cart, Wishlist) avec Domain → Store → Composant, voir la page <a href="/examples/signals" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Exemples Signals Stores</a>.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Signals DevTools (Chrome)
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      En mode développement, tous les signals du projet sont automatiquement exposés dans l'extension Chrome <strong>Signals DevTools</strong>. Cela permet de visualiser en temps réel la valeur de chaque signal (cart, session, wishlist, etc.) et de debugger les re-renders.
+    </p>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Comment ça fonctionne
+        </h3>
+
+        <div class="space-y-4">
+          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+            <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">1. Barrel export des signals</h4>
+            <p class="text-sm text-blue-800 dark:text-blue-200">
+              <code>lib/signals/index.ts</code> rassemble tous les signals du projet en un seul point. C'est ce fichier qui alimente le DevTools.
+            </p>
+          </div>
+
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+            <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1">2. Composant initializer</h4>
+            <p class="text-sm text-green-800 dark:text-green-200">
+              <code>SignalsDevtools.tsx</code> initialise le provider <strong>uniquement en mode dev</strong> (<code>import.meta.env.DEV</code>). Il ne rend rien visuellement (retourne <code>null</code>).
+            </p>
+          </div>
+
+          <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+            <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-1">3. Monté dans le Layout</h4>
+            <p class="text-sm text-purple-800 dark:text-purple-200">
+              Le composant est ajouté dans <code>Layout.astro</code> avec <code>client:only="preact"</code> pour qu'il s'exécute uniquement côté client.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <CodeBlock
+        title="lib/signals/index.ts — Barrel export pour DevTools"
+        lang="typescript"
+        code={`/**
+ * Barrel export for all signals
+ * Used by SignalsDevtools for monitoring
+ */
+
+// Cart
+export {
+  cart,
+  loading as cartLoading,
+  itemCount as cartItemCount,
+  totalQuantity as cartTotalQuantity,
+  isEmpty as cartIsEmpty,
+} from "./cart.store";
+
+// Auth
+export { session, loading as authLoading, isLoggedIn, isGuest } from "./auth.store";
+
+// Customer
+export { customer, customerLoading } from "./customer.store";
+
+// Wishlist
+export {
+  wishlist,
+  loading as wishlistLoading,
+  totalItems as wishlistTotalItems,
+  isEmpty as wishlistIsEmpty,
+} from "./wishlist.store";
+
+// UI
+export { currentModal, isModalOpen } from "./account-modal.store";
+export { successNotification, errorNotification } from "./notification.store";
+export { productInfoAtHeader } from "./ui.store";
+export { gridItems, gridMeta, gridLoading } from "./product-grid.store";
+export { addressLoading, addressError } from "./address.store";`}
+      />
+
+      <CodeBlock
+        title="components/SignalsDevtools.tsx"
+        lang="tsx"
+        code={`import { useEffect } from "preact/hooks";
+import { effect } from "@preact/signals";
+import * as signals from "../lib/signals";
+
+export function SignalsDevtools() {
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    import("signals-devtool-provider").then(({ default: devtool }) => {
+      devtool.init({ signals, effect });
+    });
+  }, []);
+
+  return null;  // Ne rend rien, initialise juste le provider
+}`}
+      />
+
+      <CodeBlock
+        title="Layout.astro — Montage dans le layout"
+        lang="astro"
+        code={`---
+import { SignalsDevtools } from "../components/SignalsDevtools";
+---
+
+<!-- En fin de body -->
+<SignalsDevtools client:only="preact" />`}
+      />
+
+      <Callout type="success">
+        <strong>Quand tu crées un nouveau signal store</strong>, pense à l'ajouter dans <code>lib/signals/index.ts</code> pour qu'il apparaisse dans le DevTools. Utilise des alias explicites pour éviter les conflits de noms (ex : <code>loading as cartLoading</code>).
+      </Callout>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://preactjs.com"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation Preact</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://preactjs.com/guide/v10/signals"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Preact Signals Guide</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/stack/astro"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Astro</div>
+    </a>
+    <a
+      href="/stack/commercetools"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">CommerceTools →</div>
+    </a>
+  </div>
+</DocsLayout>

@@ -1,0 +1,260 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Islands Architecture en détail">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Islands Architecture
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Comprendre en profondeur l'architecture Islands et comment elle optimise les performances
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Qu'est-ce qu'une "Island" ?
+    </h2>
+
+    <Callout type="info">
+      Une <strong>Island</strong> (île) est un composant interactif isolé dans une page de contenu statique. Chaque île peut être hydratée indépendamment des autres.
+    </Callout>
+
+    <p class="text-gray-700 dark:text-gray-300 mt-6 mb-6">
+      Traditionnellement, les frameworks comme React ou Vue rendent toute la page interactive, même si seulement 5% du contenu nécessite de l'interactivité. Cela entraîne l'envoi de JavaScript inutile au client.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h3 class="font-bold text-red-900 dark:text-red-100 mb-3">❌ Approche Traditionnelle</h3>
+        <ul class="text-sm text-red-800 dark:text-red-200 space-y-2">
+          <li>• Toute la page est JavaScript</li>
+          <li>• Bundle lourd (~200KB+)</li>
+          <li>• Time to Interactive long</li>
+          <li>• SEO complexe (SSR nécessaire)</li>
+        </ul>
+      </div>
+
+      <div class="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-bold text-green-900 dark:text-green-100 mb-3">✅ Islands Architecture</h3>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-2">
+          <li>• HTML statique par défaut</li>
+          <li>• JS uniquement où nécessaire</li>
+          <li>• Bundle minimal (~20KB)</li>
+          <li>• SEO natif</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple Concret : Fiche Produit
+    </h2>
+
+    <CodeBlock
+      title="pages/product/[id].astro"
+      lang="astro"
+      code={`---
+import Layout from "../../layouts/Layout.astro";
+import { getProduct } from "../../lib/services/product.service";
+import { ProductGallery } from "../../features/product/ProductGallery";
+import { AddToCart } from "../../features/product/AddToCart";
+import { Reviews } from "../../features/product/Reviews";
+
+const product = await getProduct(Astro.params.id);
+---
+
+<Layout title={product.name}>
+  <!-- ⚡ STATIQUE : HTML pur, 0 JS -->
+  <header>
+    <h1>{product.name}</h1>
+    <p>{product.price}€</p>
+  </header>
+
+  <!-- ⚡ STATIQUE : Description, pas besoin de JS -->
+  <section>
+    <p>{product.description}</p>
+  </section>
+
+  <!-- 🏝️ ISLAND 1 : Hydraté quand visible -->
+  <!-- Lazy load, pas critique -->
+  <ProductGallery
+    images={product.images}
+    client:visible
+  />
+
+  <!-- 🏝️ ISLAND 2 : Hydraté immédiatement -->
+  <!-- Critique pour la conversion -->
+  <AddToCart
+    productId={product.id}
+    client:load
+  />
+
+  <!-- 🏝️ ISLAND 3 : Hydraté quand idle -->
+  <!-- Basse priorité -->
+  <Reviews
+    productId={product.id}
+    client:idle
+  />
+</Layout>`}
+    />
+
+    <div class="mt-6 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-3">Résultat :</h3>
+      <ul class="text-blue-800 dark:text-blue-200 space-y-2">
+        <li>• <strong>HTML statique</strong> : Header + Description (instantané)</li>
+        <li>• <strong>~5KB JS</strong> : AddToCart (chargé immédiatement)</li>
+        <li>• <strong>~15KB JS</strong> : ProductGallery (chargé au scroll)</li>
+        <li>• <strong>~10KB JS</strong> : Reviews (chargé quand le navigateur est idle)</li>
+        <li>• <strong>Total Initial</strong> : ~5KB au lieu de ~200KB</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Stratégies d'Hydratation
+    </h2>
+
+    <div class="space-y-6">
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="font-semibold text-gray-900 dark:text-white">client:load - Immédiat</h3>
+        </div>
+        <div class="p-4">
+          <p class="text-gray-700 dark:text-gray-300 mb-3">
+            Charge et hydrate le composant dès que possible, avant que la page soit interactive.
+          </p>
+          <CodeBlock
+            lang="astro"
+            code={`<AddToCart client:load />`}
+          />
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <strong>Cas d'usage :</strong> Boutons critiques, formulaires de conversion
+          </p>
+        </div>
+      </div>
+
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="font-semibold text-gray-900 dark:text-white">client:visible - Lazy</h3>
+        </div>
+        <div class="p-4">
+          <p class="text-gray-700 dark:text-gray-300 mb-3">
+            Charge le composant uniquement quand il devient visible dans le viewport (Intersection Observer).
+          </p>
+          <CodeBlock
+            lang="astro"
+            code={`<ProductGallery client:visible />`}
+          />
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <strong>Cas d'usage :</strong> Carousels, galeries d'images, contenu below the fold
+          </p>
+        </div>
+      </div>
+
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="font-semibold text-gray-900 dark:text-white">client:idle - Différé</h3>
+        </div>
+        <div class="p-4">
+          <p class="text-gray-700 dark:text-gray-300 mb-3">
+            Charge le composant quand le navigateur a fini ses tâches prioritaires (requestIdleCallback).
+          </p>
+          <CodeBlock
+            lang="astro"
+            code={`<ChatWidget client:idle />`}
+          />
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <strong>Cas d'usage :</strong> Chat support, analytics, contenu non-critique
+          </p>
+        </div>
+      </div>
+
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="font-semibold text-gray-900 dark:text-white">client:only - Client uniquement</h3>
+        </div>
+        <div class="p-4">
+          <p class="text-gray-700 dark:text-gray-300 mb-3">
+            Ne fait aucun SSR, le composant est uniquement rendu côté client.
+          </p>
+          <CodeBlock
+            lang="astro"
+            code={`<DevTools client:only="preact" />`}
+          />
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <strong>Cas d'usage :</strong> Composants qui dépendent de window/document, devtools
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Avantages Mesurables
+    </h2>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div class="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">-90%</div>
+        <div class="text-sm text-green-900 dark:text-green-100">JavaScript envoyé</div>
+      </div>
+
+      <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div class="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">3x</div>
+        <div class="text-sm text-blue-900 dark:text-blue-100">Plus rapide TTI</div>
+      </div>
+
+      <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div class="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">100</div>
+        <div class="text-sm text-purple-900 dark:text-purple-100">Score Lighthouse</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Best Practices
+    </h2>
+
+    <div class="space-y-4">
+      <Callout type="success">
+        <strong>✓ DO :</strong> Utilisez du HTML statique autant que possible. Si un composant n'a pas besoin d'interactivité, ne l'hydratez pas.
+      </Callout>
+
+      <Callout type="success">
+        <strong>✓ DO :</strong> Utilisez <code>client:visible</code> pour les composants below the fold. Pas besoin de charger une galerie d'images si l'utilisateur ne scrolle pas.
+      </Callout>
+
+      <Callout type="warning">
+        <strong>⚠ AVOID :</strong> N'utilisez pas <code>client:load</code> partout. Ça annule les bénéfices de l'architecture Islands.
+      </Callout>
+
+      <Callout type="danger">
+        <strong>✗ DON'T :</strong> N'hydratez pas des composants qui n'ont pas besoin d'état ou d'événements. Un simple <code>&lt;img&gt;</code> n'a pas besoin d'être un composant Preact.
+      </Callout>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/architecture/overview"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Vue d'ensemble</div>
+    </a>
+    <a
+      href="/architecture/data-flow"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Flux de données →</div>
+    </a>
+  </div>
+</DocsLayout>

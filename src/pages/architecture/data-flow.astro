@@ -1,0 +1,459 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+---
+
+<DocsLayout title="Flux de Données">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Flux de Données
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Comprendre comment les données circulent dans l'application
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Vue d'Ensemble
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-600 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`┌─────────────────────────────────────────────────────────────────┐
+│                        BROWSER (Client)                          │
+│                                                                  │
+│    Page Astro          Composant Preact         Signal Store     │
+│    (frontmatter)       (client:load)            (auth, cart)     │
+│         │                    │                       │           │
+│         │              ┌─────┴──────┐          ┌─────┴──────┐   │
+│         │              │ fetch()    │          │ apiFetch() │   │
+│         │              │ /api/*     │          │ BFF direct │   │
+│         │              └─────┬──────┘          └─────┬──────┘   │
+├─────────┼────────────────────┼───────────────────────┼───────────┤
+│         │                    │                       │           │
+│         │             A. Astro API Routes     B. Appels BFF     │
+│         │                    │                       │           │
+│         ▼                    ▼                       │           │
+│    ┌─────────┐       ┌─────────────┐                │           │
+│    │ Service │       │ API Route   │                │           │
+│    │  Layer  │◄──────│ pages/api/* │                │           │
+│    └────┬────┘       └─────────────┘                │           │
+│         │                                            │           │
+│    ┌────▼────────────┐                               │           │
+│    │ API Layer       │                               │           │
+│    │ commercetools.ts│                               │           │
+│    │ contentstack.ts │                               │           │
+│    └────┬────────────┘                               │           │
+│         │                                            │           │
+│    ┌────▼────────────┐                               │           │
+│    │ Domain Layer    │                               │           │
+│    │ CT → UI mapping │                               │           │
+│    └────┬────────────┘                               │           │
+│         │                                            │           │
+└─────────┼────────────────────────────────────────────┼───────────┘
+          │                                            │
+          ▼                                            ▼
+┌──────────────────────┐              ┌────────────────────────┐
+│   COMMERCETOOLS API  │              │   BFF (Node.js)        │
+│   admin token (OAuth)│              │   PUBLIC_BFF_BASE_URL   │
+│   Products, Cart,    │              │   /auth/*, /customer/* │
+│   Shopping Lists     │              └────────┬───────────────┘
+└──────────────────────┘                       │
+                                               ▼
+                                      ┌────────────────────────┐
+                                      │   COMMERCETOOLS API    │
+                                      │   customer token       │
+                                      └────────────────────────┘`}</pre>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h4 class="font-bold text-blue-700 dark:text-blue-300 mb-2">Flux A — Astro API Routes</h4>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          Le composant Preact fait un <code>fetch()</code> vers une <strong>API Route Astro</strong> (<code>/api/*</code>).
+          Côté serveur, la route appelle le <strong>Service Layer</strong> → <strong>API Layer</strong> (commercetools.ts) → <strong>CommerceTools API</strong> avec un <strong>admin token</strong>.
+          Utilisé pour le panier, les wishlists et les données produit.
+        </p>
+      </div>
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+        <h4 class="font-bold text-orange-700 dark:text-orange-300 mb-2">Flux B — BFF (Backend For Frontend)</h4>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          Le Signal Store appelle directement le <strong>BFF</strong> via <code>apiFetch()</code> (<code>lib/api/auth.ts</code>, <code>lib/api/customer.ts</code>).
+          Le BFF expose des routes simples : <code>/auth/signin</code>, <code>/auth/signup</code>, <code>/customer/me</code>, <code>/customer/me/password</code>.
+          Utilisé pour la connexion, l'inscription, la gestion du profil et le changement de mot de passe.
+        </p>
+      </div>
+    </div>
+
+    <Callout type="warning">
+      <strong>Migration en cours :</strong> le flux <strong>A</strong> (Astro API Routes) sera progressivement migré vers le flux <strong>B</strong> (BFF). Aujourd'hui seuls auth/customer passent par le BFF.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pattern 1 : SSR Direct
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Pour les données nécessaires au rendu initial (SEO, First Paint). Le fetch se fait dans le frontmatter Astro, côté serveur uniquement.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">Avantages</h4>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-1">
+          <li>• SEO optimal (contenu indexable)</li>
+          <li>• First Paint ultra-rapide</li>
+          <li>• Credentials sécurisés (côté serveur)</li>
+        </ul>
+      </div>
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Cas d'usage</h4>
+        <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+          <li>• Fiche produit, listing</li>
+          <li>• Contenu CMS (banners, menus)</li>
+          <li>• Tout contenu indexable</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      Voir l'exemple complet (Page Produit avec Islands) sur la page <a href="/guides/data-fetching#ssr" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300">Patterns de fetch → SSR</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pattern 2a : Signal → API Route → CommerceTools
+    </h2>
+
+    <div class="flex items-center gap-3 mb-4">
+      <span class="flex-shrink-0 px-3 py-1 rounded-full bg-blue-600 text-white font-bold text-sm">A</span>
+      <p class="text-gray-700 dark:text-gray-300">
+        Pour le <strong>panier, wishlist et cross-sell</strong>. Le signal store appelle une API Route Astro qui passe par le Service Layer et <code>commercetools.ts</code>.
+      </p>
+    </div>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-600 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`┌─────────────────────────────────────────────────────────┐
+│         CLIENT → API Route → Service → CT               │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────┐       ┌─────────────┐    ┌─────────────┐  │
+│  │AddToCart│ POST  │ /api/cart/  │    │  cart.      │  │
+│  │ Button  │──────►│  add.ts     │───►│  service.ts │  │
+│  └─────────┘       └─────────────┘    └──────┬──────┘  │
+│      ▲                                       │          │
+│      │                                       ▼          │
+│      │                              ┌───────────────┐   │
+│      │                              │commercetools.ts│  │
+│      │                              │ (admin token)  │  │
+│      │                              └───────┬───────┘   │
+│      │                                      │           │
+│      │              ┌───────────────┐       │           │
+│      │              │   Response    │◄──────┘           │
+│      │              │   { cart }    │                    │
+│      │              └───────┬───────┘                    │
+│      │                      │                            │
+│  ┌───┴──────┐   ┌───────────▼──────┐                    │
+│  │cart.store│◄──│cart.value = cart │                    │
+│  │ (Signal) │   └──────────────────┘                    │
+│  └──────────┘                                            │
+│      │                                                   │
+│      ▼  Tous les composants utilisant cart se re-rendent│
+└─────────────────────────────────────────────────────────┘`}</pre>
+    </div>
+
+    <div class="mt-4 space-y-3">
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-blue-500 font-bold mt-0.5">1.</span>
+        <p><strong>Signal Store</strong> (<code>cart.store.ts</code>) appelle <code>fetch("/api/cart/add")</code></p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-blue-500 font-bold mt-0.5">2.</span>
+        <p><strong>API Route</strong> (<code>pages/api/cart/add.ts</code>) valide la requête et passe au Service Layer</p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-blue-500 font-bold mt-0.5">3.</span>
+        <p><strong>Service Layer</strong> orchestre la logique et choisit le bon endpoint CT (admin token ou customer <code>/me</code>)</p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-blue-500 font-bold mt-0.5">4.</span>
+        <p><strong>Signal update</strong> : <code>cart.value = result.cart</code> → re-render automatique de tous les composants</p>
+      </div>
+    </div>
+
+    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+      Pour l'architecture d'intégration CommerceTools et le BFF, voir la page <a href="/stack/commercetools" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300">CommerceTools</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pattern 2b : Signal → BFF → CommerceTools
+    </h2>
+
+    <div class="flex items-center gap-3 mb-4">
+      <span class="flex-shrink-0 px-3 py-1 rounded-full bg-orange-600 text-white font-bold text-sm">B</span>
+      <p class="text-gray-700 dark:text-gray-300">
+        Pour l'<strong>auth et la gestion customer</strong>. Le signal store appelle directement le BFF via <code>apiFetch()</code>. Le BFF expose des routes simples (<code>/auth/signin</code>, <code>/customer/me</code>...) et abstrait la complexité CommerceTools.
+      </p>
+    </div>
+
+    <div class="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border border-orange-200 dark:border-orange-600 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`┌─────────────────────────────────────────────────────────┐
+│         CLIENT → BFF direct (pas d'API Route)            │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌───────────┐       ┌──────────────┐                   │
+│  │  Login    │       │ auth.store.ts│                   │
+│  │  Form     │──────►│  login()     │                   │
+│  └───────────┘       └──────┬───────┘                   │
+│                             │                            │
+│                    ┌────────▼────────┐                   │
+│                    │ lib/api/auth.ts │                   │
+│                    │ signIn(email,pw)│                   │
+│                    └────────┬────────┘                   │
+│                             │ apiFetch(BFF)              │
+│  ┌──────────────────────────┼──────────────────────────┐│
+│  │                          ▼                          ││
+│  │            ┌─────────────────────┐                  ││
+│  │            │ BFF (PUBLIC_BFF_BASE_URL) │                  ││
+│  │            │ POST /auth/signin   │                  ││
+│  │            └──────────┬──────────┘                  ││
+│  │                       │                             ││
+│  │                       ▼                             ││
+│  │            ┌─────────────────────┐                  ││
+│  │            │  CommerceTools API  │                  ││
+│  │            │  (customer token)   │                  ││
+│  │            └──────────┬──────────┘                  ││
+│  └───────────────────────┼─────────────────────────────┘│
+│                          │                               │
+│                   ┌──────▼───────┐                       │
+│                   │   Response   │                       │
+│                   │ { tokens }   │                       │
+│                   └──────┬───────┘                       │
+│                          │                               │
+│  ┌───────────────┐  ┌───▼───────────────┐               │
+│  │ session.value │◄─│ fetchMe(token)    │               │
+│  │ (Signal)      │  │ → GET /customer/me │               │
+│  └───────┬───────┘  └───────────────────┘               │
+│          │                                               │
+│          ▼  localStorage + re-render des composants     │
+└─────────────────────────────────────────────────────────┘`}</pre>
+    </div>
+
+    <div class="mt-4 space-y-3">
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-orange-500 font-bold mt-0.5">1.</span>
+        <p><strong>Signal Store</strong> (<code>auth.store.ts</code>) appelle <code>login(email, password)</code></p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-orange-500 font-bold mt-0.5">2.</span>
+        <p><strong>API module</strong> (<code>lib/api/auth.ts</code> ou <code>lib/api/customer.ts</code>) appelle le BFF via <code>apiFetch()</code> — ex : <code>POST /auth/signin</code>, <code>GET /customer/me</code></p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-orange-500 font-bold mt-0.5">3.</span>
+        <p><strong>BFF</strong> abstrait la complexité CT (OAuth, actions, versioning) et retourne des réponses simples (tokens, profil client avec champs plats)</p>
+      </div>
+      <div class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+        <span class="text-orange-500 font-bold mt-0.5">4.</span>
+        <p><strong>Signal Store</strong> appelle <code>fetchMe(token)</code> via <code>GET /customer/me</code>, puis persiste la session dans localStorage</p>
+      </div>
+    </div>
+
+    <Callout type="info">
+      <strong>Différence clé :</strong> dans le flux <strong>A</strong>, le token CT est un token <em>admin</em> géré côté serveur (jamais exposé au client). Dans le flux <strong>B</strong>, le BFF gère le token <em>customer</em> et le retourne au client pour les appels <code>/customer/me</code>.
+    </Callout>
+
+    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+      Voir les exemples de code détaillés et la référence complète des routes BFF sur la page <a href="/stack/commercetools" class="text-orange-600 dark:text-orange-400 underline hover:text-orange-800 dark:hover:text-orange-300">CommerceTools → Routes BFF</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      State local (useState) & useEffect
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Pour l'état éphémère isolé à un composant (loading, erreur, sélection) et le fetch de données non-critiques après hydratation.
+    </p>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      Voir les exemples et les règles de décision Signal vs useState sur la page <a href="/guides/data-fetching#signal-vs-state-local" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Patterns de fetch → Signal vs State local</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Quand Utiliser Quoi ?
+    </h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="bg-gray-100 dark:bg-gray-800">
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Besoin</th>
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Pattern</th>
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Flux</th>
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left">Exemple</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 dark:text-gray-300">
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Données pour SEO/First Paint
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              <code>SSR Direct</code>
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Frontmatter → Service → CT
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Fiche produit, listing
+            </td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-800/50">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Action panier / wishlist
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              <code class="text-blue-600 dark:text-blue-400">Signal + API Route</code>
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Signal → <code>/api/*</code> → Service → CT
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Add to cart, wishlist
+            </td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Auth / Customer
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              <code class="text-orange-600 dark:text-orange-400">Signal + BFF</code>
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Signal → <code>apiFetch()</code> → BFF → CT
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              signIn, signUp, fetchMe, updateCustomer
+            </td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-800/50">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Données non-critiques
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              <code>useEffect</code>
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Mount → <code>/api/*</code> → Service → CT
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Cross-sell, recommandations
+            </td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              État partagé multi-composants
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              <code>Signal store</code>
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Signal réactif global
+            </td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-3">
+              Cart, session, wishlist
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <Callout type="warning">
+      <strong>Cible migration :</strong> à terme, les lignes "Signal + API Route" migreront vers "Signal + BFF". Le pattern sera uniforme : <code>Signal → apiFetch() → BFF → CT</code>.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couches d'Abstraction
+    </h2>
+
+    <h3 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3">Flux A : Côté serveur (Astro)</h3>
+    <div class="space-y-4 mb-8">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">1. API Layer <span class="text-xs font-normal bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded">SERVER-ONLY</span></h4>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          Appels HTTP bruts vers CommerceTools/Contentstack. Token admin OAuth2 caché en mémoire.
+        </p>
+        <code class="text-xs">lib/api/commercetools.ts, lib/api/contentstack.ts</code>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">2. Domain Layer</h4>
+        <p class="text-sm text-green-800 dark:text-green-200">
+          Transformation des données API vers format UI (CT → Product UI).
+        </p>
+        <code class="text-xs">lib/domain/product.ts, lib/domain/cart.ts</code>
+      </div>
+
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+        <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-2">3. Service Layer</h4>
+        <p class="text-sm text-purple-800 dark:text-purple-200">
+          Orchestration : API + Domain. Point d'entrée pour pages Astro et API routes.
+        </p>
+        <code class="text-xs">lib/services/product.service.ts, lib/services/cart.service.ts</code>
+      </div>
+    </div>
+
+    <h3 class="text-lg font-semibold text-orange-700 dark:text-orange-300 mb-3">Flux B : Côté client (BFF)</h3>
+    <div class="space-y-4">
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
+        <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-2">1. HTTP Client <span class="text-xs font-normal bg-orange-200 dark:bg-orange-800 px-2 py-0.5 rounded">CLIENT-SIDE</span></h4>
+        <p class="text-sm text-orange-800 dark:text-orange-200">
+          Helper partagé <code>apiFetch()</code> pour appeler le BFF. Gère les erreurs (<code>ApiError</code>).
+        </p>
+        <code class="text-xs">lib/api/http-client.ts</code>
+      </div>
+
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
+        <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-2">2. API Modules (BFF)</h4>
+        <p class="text-sm text-orange-800 dark:text-orange-200">
+          Fonctions typées pour chaque endpoint BFF : <code>signIn()</code>, <code>signUp()</code>, <code>guestToken()</code>, <code>refreshToken()</code>, <code>checkEmailExists()</code>, <code>fetchMe()</code>, <code>updateCustomer()</code>, <code>changePassword()</code>.
+        </p>
+        <code class="text-xs">lib/api/auth.ts, lib/api/customer.ts</code>
+      </div>
+
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
+        <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-2">3. Signal Stores</h4>
+        <p class="text-sm text-orange-800 dark:text-orange-200">
+          Orchestration client : appels API, gestion session (localStorage), état réactif partagé entre composants.
+        </p>
+        <code class="text-xs">lib/signals/auth.store.ts, lib/signals/cart.store.ts</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/architecture/islands"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Islands Architecture</div>
+    </a>
+    <a
+      href="/stack/astro"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Découvrir Astro →</div>
+    </a>
+  </div>
+</DocsLayout>

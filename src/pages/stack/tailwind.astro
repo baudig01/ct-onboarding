@@ -1,0 +1,357 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Tailwind CSS v4">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Tailwind CSS v4
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Framework CSS utility-first pour un développement rapide et maintenable
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pourquoi Tailwind ?
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h3 class="font-bold text-red-900 dark:text-red-100 mb-3">CSS Traditionnel</h3>
+        <ul class="text-sm text-red-800 dark:text-red-200 space-y-2">
+          <li>• Nommage difficile (BEM, etc.)</li>
+          <li>• CSS non utilisé (dead code)</li>
+          <li>• Conflits de spécificité</li>
+          <li>• Bundle CSS qui grossit</li>
+        </ul>
+      </div>
+
+      <div class="p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-bold text-green-900 dark:text-green-100 mb-3">Tailwind CSS</h3>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-2">
+          <li>• Classes utilitaires réutilisables</li>
+          <li>• Purge automatique du CSS</li>
+          <li>• Pas de conflits</li>
+          <li>• Bundle minimal en prod</li>
+        </ul>
+      </div>
+    </div>
+
+    <Callout type="success">
+      Tailwind v4 apporte des performances encore meilleures et une configuration simplifiée avec le nouveau moteur Lightning CSS.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Nouveautés Tailwind v4
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Moteur Lightning CSS</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          Build 10x plus rapide grâce au nouveau moteur écrit en Rust.
+        </p>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Configuration CSS-first</h3>
+        <p class="text-sm text-green-800 dark:text-green-200">
+          Plus besoin de tailwind.config.js. La configuration se fait directement dans le CSS avec @theme.
+        </p>
+      </div>
+
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 class="font-semibold text-purple-900 dark:text-purple-100 mb-2">Support natif des container queries</h3>
+        <p class="text-sm text-purple-800 dark:text-purple-200">
+          Les container queries sont maintenant intégrés nativement dans Tailwind v4.
+        </p>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Variants améliorés</h3>
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+          Nouveaux variants pour un contrôle plus fin du styling (data-*, aria-*, etc.).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Configuration du Projet
+    </h2>
+
+    <CodeBlock
+      title="src/styles/global.css"
+      lang="css"
+      code={`@import "tailwindcss";
+
+@theme {
+  /* Couleurs custom par marque */
+  --color-primary: #7c3aed;
+  --color-secondary: #ec4899;
+
+  /* Breakpoints */
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1280px;
+}
+
+/* Styles globaux */
+body {
+  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+/* Composants réutilisables */
+.btn-primary {
+  @apply px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6;
+}`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Classes Utilitaires Courantes
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Layout & Spacing
+        </h3>
+        <CodeBlock
+          lang="html"
+          code={`<!-- Flexbox -->
+<div class="flex items-center justify-between gap-4">
+  <div class="flex-1">Contenu flexible</div>
+  <button>Action</button>
+</div>
+
+<!-- Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="col-span-2">Large</div>
+  <div>Small</div>
+</div>
+
+<!-- Spacing -->
+<div class="px-4 py-2 mb-6">
+  <p class="mt-4">Paragraphe</p>
+</div>`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Typography
+        </h3>
+        <CodeBlock
+          lang="html"
+          code={`<!-- Tailles et styles -->
+<h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+  Titre principal
+</h1>
+
+<p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
+  Paragraphe avec bon line-height
+</p>
+
+<code class="text-sm font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+  Code inline
+</code>`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Couleurs & Backgrounds
+        </h3>
+        <CodeBlock
+          lang="html"
+          code={`<!-- Solid colors -->
+<div class="bg-purple-600 text-white">Bouton</div>
+
+<!-- Gradients -->
+<div class="bg-gradient-to-br from-purple-500 to-pink-500">
+  Gradient
+</div>
+
+<!-- Dark mode -->
+<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+  Support dark mode
+</div>`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Responsive Design
+        </h3>
+        <CodeBlock
+          lang="html"
+          code={`<!-- Responsive breakpoints -->
+<div class="text-sm md:text-base lg:text-lg">
+  Taille responsive
+</div>
+
+<!-- Hidden/Show par breakpoint -->
+<div class="hidden md:block">
+  Visible uniquement desktop
+</div>
+
+<div class="block md:hidden">
+  Visible uniquement mobile
+</div>`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          States & Interactions
+        </h3>
+        <CodeBlock
+          lang="html"
+          code={`<!-- Hover, focus, active -->
+<button class="bg-purple-600 hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 active:scale-95 transition-all">
+  Bouton interactif
+</button>
+
+<!-- Group hover -->
+<div class="group">
+  <img src="..." class="group-hover:scale-110 transition-transform" />
+  <p class="group-hover:text-purple-600">Texte</p>
+</div>`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Bonnes Pratiques
+    </h2>
+
+    <Callout type="info" title="Composants Réutilisables">
+      Pour les patterns répétitifs, créez des composants Preact plutôt que d'extraire des classes CSS. Les composants sont plus maintenables.
+    </Callout>
+
+    <div class="mt-6 space-y-4">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Utiliser les variants</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Préférer <code>hover:</code>, <code>focus:</code>, <code>dark:</code> plutôt que du CSS custom
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Mobile-first</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Styles de base pour mobile, puis <code>md:</code> et <code>lg:</code> pour desktop
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Design system</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Utiliser les valeurs du thème (colors, spacing) plutôt que des valeurs arbitraires
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">❌</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Éviter les valeurs arbitraires</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <code>w-[247px]</code> est moins maintenable que <code>w-64</code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Configuration Multi-Marques
+    </h2>
+
+    <CodeBlock
+      title="Styles spécifiques par marque"
+      lang="css"
+      code={`/* src/styles/brands/etam.css */
+@theme {
+  --color-brand-primary: #7c3aed;
+  --color-brand-secondary: #ec4899;
+}
+
+/* src/styles/brands/undiz.css */
+@theme {
+  --color-brand-primary: #f59e0b;
+  --color-brand-secondary: #10b981;
+}
+
+/* Utilisation */
+.header {
+  background-color: var(--color-brand-primary);
+}`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://tailwindcss.com"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation Tailwind CSS</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://tailwindcss.com/docs/upgrade-guide"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Guide de Migration v4</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/stack/contentstack"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Contentstack</div>
+    </a>
+    <a
+      href="/guides/data-fetching"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Data Fetching →</div>
+    </a>
+  </div>
+</DocsLayout>

@@ -1,0 +1,750 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Live Preview - Contentstack">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Live Preview Contentstack
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Permettre aux contributeurs de voir leurs modifications en temps réel dans le Visual Builder.
+    Guide complet : architecture, configuration, et m&eacute;thodologie pour chaque nouvelle page.
+  </p>
+
+  <!-- ================================================================== -->
+  <!-- PRINCIPE -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Principe
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Le Live Preview repose sur le SDK <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">@contentstack/live-preview-utils</code> qui intercepte les requ&ecirc;tes et retourne les donn&eacute;es live via <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">postMessage</code>.
+    </p>
+
+    <div class="overflow-x-auto mb-6">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-700">
+            <th class="text-left py-2 pr-4 font-semibold text-gray-900 dark:text-white">Mode</th>
+            <th class="text-left py-2 pr-4 font-semibold text-gray-900 dark:text-white">Donn&eacute;es</th>
+            <th class="text-left py-2 pr-4 font-semibold text-gray-900 dark:text-white">Editable</th>
+            <th class="text-left py-2 font-semibold text-gray-900 dark:text-white">Contexte</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 dark:text-gray-300">
+          <tr class="border-b border-gray-100 dark:border-gray-800">
+            <td class="py-2 pr-4 font-medium">SSR <span class="text-gray-400">(isPreview=false)</span></td>
+            <td class="py-2 pr-4"><code class="px-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">initialData</code> pr&eacute;-fetch&eacute;e serveur</td>
+            <td class="py-2 pr-4">Non</td>
+            <td class="py-2">Production</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-medium">Preview <span class="text-gray-400">(isPreview=true)</span></td>
+            <td class="py-2 pr-4">Fetch client-side via SDK</td>
+            <td class="py-2 pr-4">Oui (Visual Builder)</td>
+            <td class="py-2">Contentstack Visual Builder</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`Contentstack Visual Builder
+       │
+       │  postMessage (données live)
+       ▼
+┌──────────────────────────────────┐
+│  useLivePreview Hook             │  Client-side (Preact)
+│  1. Init SDK Live Preview        │
+│  2. Fetch via Stack.query()      │  ← Le SDK intercepte et retourne les données live
+│  3. addEditableTags()            │  ← Ajoute les propriétés $ pour data-cslp
+│  4. onEntryChange()              │  ← Re-fetch à chaque modif de l'éditeur
+└──────────────────────────────────┘`}</pre>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- ARCHITECTURE 5 COUCHES -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Architecture &mdash; Les 5 couches du Live Preview
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`1. ENV CONFIG          utils/contentstack-env.ts
+                       PUBLIC_IS_PREVIEW=true active le mode preview
+       │
+2. DETECTION PREVIEW   lib/api/contentstack.ts → getPreviewContext(url)
+                       Détecte ?live_preview=...&content_type_uid=...&entry_uid=...
+       │
+3. PAGE ASTRO          pages/index.astro (frontmatter)
+                       Passe isPreview + csConfig au composant Preact
+       │
+4. COMPOSANT PREACT    features/homepage/HomePageContent.tsx
+                       Appelle useLivePreview() → reçoit entry avec $
+       │
+5. COMPOSANT UI        components/FullBanner.tsx
+                       Applique {...editable?.titleProps} sur les éléments HTML`}</pre>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- COUCHE 1 — CONFIG ENV -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couche 1 &mdash; Configuration Env
+    </h2>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">utils/contentstack-env.ts</code>
+    </p>
+
+    <CodeBlock
+      title="ContentstackConfig"
+      lang="typescript"
+      code={`export interface ContentstackConfig {
+  apiKey: string;
+  deliveryToken: string;
+  previewToken: string;     // ← Token preview obligatoire
+  environment: string;
+  region: string;
+  isPreview: boolean;       // ← PUBLIC_IS_PREVIEW=true
+}`}
+    />
+
+    <CodeBlock
+      title="Variables d'env requises"
+      lang="bash"
+      code={`PUBLIC_CONTENTSTACK_API_KEY=...
+PUBLIC_CONTENTSTACK_DELIVERY_TOKEN=...
+PUBLIC_CONTENTSTACK_PREVIEW_TOKEN=...      # Spécifique preview
+PUBLIC_CONTENTSTACK_ENVIRONMENT=...
+PUBLIC_CONTENTSTACK_REGION=eu
+PUBLIC_IS_PREVIEW=true                     # Active le mode preview globalement`}
+    />
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- COUCHE 2 — DETECTION PREVIEW -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couche 2 &mdash; D&eacute;tection du Preview
+    </h2>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">lib/api/contentstack.ts</code> &rarr; <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">getPreviewContext()</code>
+    </p>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Le preview est activ&eacute; de 2 fa&ccedil;ons :
+    </p>
+    <ol class="list-decimal list-inside text-gray-700 dark:text-gray-300 mb-4 space-y-1">
+      <li><strong>URL params (prod)</strong> : Visual Builder ouvre la page avec <code class="px-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">?live_preview=...&amp;content_type_uid=...&amp;entry_uid=...</code></li>
+      <li><strong>Env variable (dev)</strong> : <code class="px-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">PUBLIC_IS_PREVIEW=true</code> force le preview</li>
+    </ol>
+
+    <CodeBlock
+      lang="typescript"
+      code={`const { isPreview, previewParams } = getPreviewContext(Astro.url);
+// isPreview: boolean
+// previewParams?: { live_preview, content_type_uid, entry_uid }`}
+    />
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- COUCHE 3 — PAGE ASTRO -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couche 3 &mdash; Page Astro
+    </h2>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      Ex : <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">pages/index.astro</code>
+    </p>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      C'est la page qui orchestre SSR et Preview :
+    </p>
+
+    <CodeBlock
+      title="pages/index.astro"
+      lang="typescript"
+      code={`---
+import { getPreviewContext } from "../lib/api/contentstack";
+import { getContentstackEnv } from "../utils/contentstack-env";
+import { getHomePageEntry } from "../lib/services/content.service";
+import HomePageContent from "../features/homepage/HomePageContent";
+
+const { isPreview, previewParams } = getPreviewContext(Astro.url);
+
+// SSR : pré-fetch les données côté serveur
+const homeEntry = await getHomePageEntry({ previewParams });
+
+// Config client : UNIQUEMENT transmise en mode preview
+const csConfig = isPreview ? getContentstackEnv() : undefined;
+---
+
+<HomePageContent
+  brand={brand}
+  isPreview={isPreview}
+  initialData={homeEntry}
+  csConfig={csConfig}
+  client:load
+/>`}
+    />
+
+    <Callout type="warning" title="Points cl&eacute;s">
+      <ul class="list-disc list-inside space-y-1">
+        <li><code>csConfig</code> n'est transmis qu'en preview (pas de fuite de tokens en prod)</li>
+        <li><code>client:load</code> est obligatoire (le composant doit s'hydrater pour le SDK)</li>
+        <li><code>initialData</code> sert de fallback SSR quand <code>isPreview=false</code></li>
+      </ul>
+    </Callout>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- COUCHE 4 — HOOK useLivePreview -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couche 4 &mdash; Hook useLivePreview
+    </h2>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">lib/contentstack-sdk/useLivePreview.ts</code>
+    </p>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Hook r&eacute;utilisable qui g&egrave;re tout le cycle de vie du Live Preview :
+    </p>
+
+    <CodeBlock
+      lang="typescript"
+      code={`const { entry, isLoading, error } = useLivePreview<HomePage>({
+  contentType: "homepage",       // Content Type UID dans Contentstack
+  fieldName: "brand",            // Champ de filtre
+  fieldValue: "etam",            // Valeur du filtre
+  isPreview,                     // true = mode preview, false = utilise initialData
+  initialData,                   // Données SSR pré-fetchées
+  csConfig,                      // Config pour init le SDK client
+});`}
+    />
+
+    <div class="grid md:grid-cols-2 gap-4 my-6">
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-2">En mode Preview (isPreview=true)</h4>
+        <ol class="list-decimal list-inside text-sm text-green-800 dark:text-green-200 space-y-1">
+          <li>Init le SDK &mdash; <code class="text-xs">ContentstackLivePreview.init(&#123; mode: "builder" &#125;)</code></li>
+          <li>Fetch les donn&eacute;es &mdash; via <code class="text-xs">Stack.contentType().entry().query().find()</code></li>
+          <li>Ajoute les tags &eacute;ditables &mdash; <code class="text-xs">addEditableTags(entry, contentType, true)</code></li>
+          <li>&Eacute;coute les changements &mdash; <code class="text-xs">onEntryChange(() =&gt; fetchData())</code></li>
+        </ol>
+      </div>
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">En mode SSR (isPreview=false)</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Retourne simplement <code class="text-xs">initialData</code> sans aucun fetch ni init SDK. Z&eacute;ro JS suppl&eacute;mentaire.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- LE $ — PROPRIETES EDITABLES -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Le <code class="text-3xl">$</code> &mdash; Propri&eacute;t&eacute;s &eacute;ditables
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Quand <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">addEditableTags(entry, "homepage", true)</code> est appel&eacute;, le SDK ajoute une propri&eacute;t&eacute; <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">$</code> &agrave; chaque objet de l'entry. Cette propri&eacute;t&eacute; contient les attributs <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">data-cslp</code> pour chaque champ.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <CodeBlock
+        title="Avant addEditableTags"
+        lang="json"
+        code={`{
+  "title": "HOLIDAYS",
+  "subtitle": "Happy",
+  "image": { "url": "https://..." }
+}`}
+      />
+      <CodeBlock
+        title="Apr&egrave;s addEditableTags"
+        lang="json"
+        code={`{
+  "title": "HOLIDAYS",
+  "subtitle": "Happy",
+  "image": { "url": "https://..." },
+  "$": {
+    "title": {
+      "data-cslp": "homepage.blt123.blocks.0.fullbanner.contentbanner.title"
+    },
+    "subtitle": {
+      "data-cslp": "homepage.blt123.blocks.0.fullbanner.contentbanner.subtitle"
+    },
+    "image": {
+      "data-cslp": "homepage.blt123.blocks.0.fullbanner.image"
+    }
+  }
+}`}
+      />
+    </div>
+
+    <Callout type="info">
+      Le <code>data-cslp</code> est le chemin complet vers le champ dans Contentstack. Le Visual Builder l'utilise pour savoir <strong>quel champ &eacute;diter</strong> quand l'utilisateur clique sur un &eacute;l&eacute;ment.
+    </Callout>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- COUCHE 5 — EXTRACTION ET APPLICATION -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Couche 5 &mdash; Extraction et application des props &eacute;ditables
+    </h2>
+
+    <!-- getEditableProps -->
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      Utilitaire <code>getEditableProps</code>
+    </h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">lib/contentstack-sdk/editable.ts</code>
+    </p>
+
+    <CodeBlock
+      lang="typescript"
+      code={`export function getEditableProps(obj: unknown, field: string): Record<string, string> {
+  const $ = (obj as any).$ as Record<string, Record<string, string>> | undefined;
+  return $?.[field] ?? {};
+}
+
+// Usage :
+getEditableProps(banner, "title")
+// → { "data-cslp": "homepage.blt123.blocks.0.fullbanner.contentbanner.title" }
+// ou {} si pas en mode preview`}
+    />
+
+    <!-- Dans le composant contenu -->
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3 mt-8">
+      Dans le composant de contenu
+    </h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      Ex : <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">features/homepage/HomePageContent.tsx</code>
+    </p>
+
+    <CodeBlock
+      lang="tsx"
+      code={`// 1. Cast pour accéder au $ (le type TS ne le déclare pas)
+const bannerWithMeta = banner as unknown as { $?: Record<string, Record<string, string>> };
+const contentbannerWithMeta = contentbanner as unknown as { $?: Record<string, Record<string, string>> };
+const ctaWithMeta = contentbanner?.cta as unknown as { $?: Record<string, Record<string, string>> };
+
+// 2. Passer les props éditables au composant UI
+<FullBanner
+  title={contentbanner?.title}
+  subtitle={contentbanner?.subtitle}
+  editable={{
+    imageProps: getEditableProps(bannerWithMeta, "image"),
+    titleProps: getEditableProps(contentbannerWithMeta, "title"),
+    subtitleProps: getEditableProps(contentbannerWithMeta, "subtitle"),
+    ctaLabelProps: getEditableProps(ctaWithMeta, "label"),
+    ctaHrefProps: getEditableProps(ctaWithMeta, "url"),
+  }}
+/>`}
+    />
+
+    <!-- Dans le composant UI -->
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3 mt-8">
+      Dans le composant UI
+    </h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+      Ex : <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">components/FullBanner.tsx</code>
+    </p>
+
+    <CodeBlock
+      lang="tsx"
+      code={`// Interface des props éditables
+interface FullBannerEditableProps {
+  videoProps?: Record<string, string>;
+  imageProps?: Record<string, string>;
+  titleProps?: Record<string, string>;
+  subtitleProps?: Record<string, string>;
+  ctaLabelProps?: Record<string, string>;
+  ctaHrefProps?: Record<string, string>;
+}
+
+// Application sur les éléments HTML via spread
+<h1 {...editable?.titleProps}>{title}</h1>
+<span {...editable?.subtitleProps}>{subtitle}</span>
+<img src={imageUrl} {...editable?.imageProps} />
+<a href={cta.url} {...editable?.ctaHrefProps}>
+  <span {...editable?.ctaLabelProps}>{cta.label}</span>
+</a>`}
+    />
+
+    <!-- Rendu HTML -->
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3 mt-8">
+      Rendu HTML r&eacute;sultant
+    </h3>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <CodeBlock
+        title="Mode Preview"
+        lang="html"
+        code={`<h1 data-cslp="homepage.blt123.blocks.0.fullbanner.contentbanner.title">
+  HOLIDAYS
+</h1>`}
+      />
+      <CodeBlock
+        title="Mode SSR (pas de $, editable = undefined)"
+        lang="html"
+        code={`<h1>HOLIDAYS</h1>`}
+      />
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- DONNEES RAW — POURQUOI LES GARDER -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pourquoi garder les donn&eacute;es "raw" ?
+    </h2>
+
+    <Callout type="warning" title="Le probl&egrave;me">
+      Quand on transforme les donn&eacute;es CMS en objets UI, on perd la propri&eacute;t&eacute; <code>$</code> avec les m&eacute;tadonn&eacute;es.
+    </Callout>
+
+    <p class="text-gray-700 dark:text-gray-300 my-4">
+      <strong>La solution :</strong> On garde une copie des donn&eacute;es brutes (<code class="px-1 bg-gray-100 dark:bg-gray-800 rounded">rawPanels</code>) pour pouvoir appeler <code class="px-1 bg-gray-100 dark:bg-gray-800 rounded">getEditableProps()</code> dessus.
+    </p>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`CONTENTSTACK        TRANSFORMATION       UI
+(données raw)       (perte du $)         (affichage)
+
+┌──────────┐       ┌──────────┐        ┌────────┐
+│ entry    │       │ BlocUI   │        │ label  │
+│ ├── $    │ ───→  │ ├── title│ ───→   │"Nouveau"│
+│ └── data │       │ └── items│        └────────┘
+└──────────┘       └──────────┘
+     │
+     │ ON GARDE UNE COPIE
+     ▼
+┌──────────┐
+│ rawPanels│ ◄─── Map<categoryId, CategoryPanelGroup>
+│ (avec $) │      Préserve les métadonnées
+└──────────┘
+     │
+     └──────────────────────────────────────────►
+         getEditableProps(raw, "field") → data-cslp`}</pre>
+    </div>
+
+    <Callout type="info">
+      Ce pattern n'est n&eacute;cessaire que lorsque les donn&eacute;es sont transform&eacute;es avant d'&ecirc;tre utilis&eacute;es (ex : Menu Visual Bloc &rarr; <code>Map&lt;string, VisualBlocUI&gt;</code>). Pour la Home Page, les donn&eacute;es raw de l'entry sont utilis&eacute;es directement, donc le <code>$</code> est d&eacute;j&agrave; pr&eacute;sent.
+    </Callout>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- EXEMPLE COMPLET — HOME PAGE -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple complet &mdash; Home Page
+    </h2>
+
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      Fichiers impliqu&eacute;s
+    </h3>
+
+    <div class="p-6 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/40 dark:to-slate-900/40 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`src/
+├── utils/contentstack-env.ts             ← Config (ContentstackConfig)
+├── lib/api/contentstack.ts               ← getPreviewContext() + fetchEntriesByTaxonomy()
+├── lib/domain/content.ts                 ← HomePage, FullBannerGlobalField...
+├── lib/services/content.service.ts       ← getHomePageEntry()
+├── lib/contentstack-sdk/
+│   ├── utils.ts                          ← getStack() (singleton SDK client)
+│   ├── useLivePreview.ts                 ← Hook réutilisable
+│   └── editable.ts                       ← getEditableProps()
+├── pages/index.astro                     ← Page Astro (orchestration SSR/Preview)
+├── features/homepage/HomePageContent.tsx  ← Composant contenu (bridge entry → UI)
+└── components/FullBanner.tsx             ← Composant UI (reçoit editable props)`}</pre>
+    </div>
+
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      Flux de donn&eacute;es
+    </h3>
+
+    <div class="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`index.astro (SSR)
+│
+├─ getPreviewContext(Astro.url) → { isPreview: true }
+├─ getHomePageEntry({ previewParams }) → HomePage (SSR data)
+├─ csConfig = getContentstackEnv()
+│
+└─► HomePageContent (client:load, Preact)
+    │
+    ├─ useLivePreview<HomePage>({...})
+    │   ├─ isPreview=true → init SDK, fetch client-side
+    │   ├─ addEditableTags(entry, "homepage", true)
+    │   └─ entry a maintenant les $ sur chaque objet
+    │
+    ├─ getEditableProps(bannerWithMeta, "image") → { "data-cslp": "..." }
+    │
+    └─► FullBanner
+        ├─ <img {...editable?.imageProps} />      → data-cslp sur l'image
+        ├─ <h1 {...editable?.titleProps}>          → data-cslp sur le titre
+        └─ <span {...editable?.ctaLabelProps}>     → data-cslp sur le CTA`}</pre>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- HOOK SPECIALISE -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Hook sp&eacute;cialis&eacute; &mdash; Cas du Menu Visual Bloc
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Pour des cas plus complexes (menu de navigation), on cr&eacute;e un hook sp&eacute;cialis&eacute; qui r&eacute;utilise <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">useLivePreview</code> et transforme les donn&eacute;es :
+    </p>
+
+    <CodeBlock
+      title="lib/contentstack-sdk/useMenuVisualBlocsPreview.ts"
+      lang="typescript"
+      code={`export function useMenuVisualBlocsPreview({ brand, isPreview, initialData, csConfig }) {
+  // Réutilise le hook générique
+  const { entry, isLoading, error } = useLivePreview<MenuVisualBloc>({
+    contentType: "menu_visual_bloc",
+    fieldName: "brand",
+    fieldValue: brand || "etam",
+    isPreview,
+    initialData,
+    csConfig,
+  });
+
+  // Transformation spécifique (entry → panels/drills Maps)
+  // ⚠️ Garde rawPanels / rawDrills pour les editable props
+  const visualBlocs = useMemo(() => transformMenuVisualBloc(entry), [entry]);
+
+  return { visualBlocs, entry, isLoading, error };
+}`}
+    />
+
+    <CodeBlock
+      title="Composant utilisant le hook sp&eacute;cialis&eacute;"
+      lang="tsx"
+      code={`export function HeaderNav({ items: preMergedItems, baseNavItems, isPreview, ... }) {
+  const { visualBlocs, isLoading } = useMenuVisualBlocsPreview({
+    brand, isPreview, initialData: initialVisualBlocsEntry, csConfig,
+  });
+
+  // En preview: re-merge avec les données live
+  // En SSR: utilise les items déjà mergés côté serveur
+  const items = useMemo(() => {
+    if (!isPreview) return preMergedItems;
+    return mergeVisualBlocsIntoNavItems(baseNavItems, visualBlocs);
+  }, [isPreview, preMergedItems, baseNavItems, visualBlocs]);
+
+  // Get raw data pour les editable props (uniquement en preview)
+  const rawPanels = isPreview ? visualBlocs.rawPanels : undefined;
+
+  return (
+    <nav>
+      {items.map((item) => {
+        const rawGroup = rawPanels?.get(item.key);
+        return (
+          <div>
+            <span {...getEditableProps(rawGroup?.category_panel_group, "section_title")}>
+              {item.visualPanels?.title}
+            </span>
+            {item.visualPanels?.items.map((panel, index) => {
+              const rawPanel = rawGroup?.category_panel_group.panels[index];
+              return (
+                <a href={\`/c/\${panel.categorySlug}\`}>
+                  <img src={panel.imageUrl}
+                    {...getEditableProps(rawPanel?.visual_panel, "image")} />
+                  <span {...getEditableProps(rawPanel?.visual_panel, "label")}>
+                    {panel.label}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}`}
+    />
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- CHECKLIST NOUVELLE PAGE -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Checklist &mdash; Ajouter le Live Preview &agrave; une nouvelle page
+    </h2>
+
+    <div class="space-y-4">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold text-sm">
+          1
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">DOMAINE &mdash; <code class="text-sm">lib/domain/content.ts</code></strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">D&eacute;finir le type TS de l'entry : <code class="text-xs">interface MaPage extends CSBaseEntry &#123; ... &#125;</code></p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold text-sm">
+          2
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">SERVICE &mdash; <code class="text-sm">lib/services/content.service.ts</code></strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">Cr&eacute;er <code class="text-xs">getMonEntry(&#123; previewParams &#125;)</code> qui appelle <code class="text-xs">fetchEntriesByTaxonomy()</code></p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold text-sm">
+          3
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">PAGE ASTRO &mdash; <code class="text-sm">pages/ma-page.astro</code></strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            a. <code class="text-xs">getPreviewContext(Astro.url)</code> &rarr; <code class="text-xs">isPreview</code><br>
+            b. Fetch SSR &rarr; <code class="text-xs">await getMonEntry(&#123; previewParams &#125;)</code><br>
+            c. <code class="text-xs">csConfig = isPreview ? getContentstackEnv() : undefined</code><br>
+            d. Passer <code class="text-xs">isPreview</code>, <code class="text-xs">initialData</code>, <code class="text-xs">csConfig</code> au composant
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold text-sm">
+          4
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">COMPOSANT CONTENU &mdash; <code class="text-sm">features/ma-page/MaPageContent.tsx</code></strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            a. Appeler <code class="text-xs">useLivePreview&lt;MonType&gt;(&#123; contentType, ... &#125;)</code><br>
+            b. Pour chaque &eacute;l&eacute;ment &eacute;ditable : cast avec <code class="text-xs">as unknown as &#123; $?: ... &#125;</code><br>
+            c. Extraire avec <code class="text-xs">getEditableProps(obj, "field")</code><br>
+            d. Passer au composant UI via prop <code class="text-xs">editable</code>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold text-sm">
+          5
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">COMPOSANT UI &mdash; <code class="text-sm">components/MonComposant.tsx</code></strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            a. D&eacute;clarer l'interface <code class="text-xs">EditableProps</code> (<code class="text-xs">Record&lt;string, string&gt;</code>)<br>
+            b. Accepter <code class="text-xs">editable?: EditableProps</code> en prop<br>
+            c. Appliquer <code class="text-xs">&#123;...editable?.fieldProps&#125;</code> sur chaque &eacute;l&eacute;ment HTML
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center font-bold text-sm">
+          6
+        </div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">V&Eacute;RIFIER dans Visual Builder</strong>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            &bull; Les &eacute;l&eacute;ments sont-ils cliquables/&eacute;ditables ?<br>
+            &bull; Les modifications se refl&egrave;tent-elles en temps r&eacute;el ?<br>
+            &bull; En mode SSR, aucun attribut <code class="text-xs">data-cslp</code> ne doit appara&icirc;tre
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- PATTERN A RETENIR -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Pattern &agrave; retenir
+    </h2>
+
+    <CodeBlock
+      lang="tsx"
+      code={`// Pour rendre un champ éditable en Live Preview :
+<element {...getEditableProps(objetRawAvecDollar, "nomDuChamp")}>
+  {valeurAffichée}
+</element>
+
+// Exemple concret :
+<span {...getEditableProps(rawPanel?.visual_panel, "label")}>
+  {panel.label}
+</span>
+
+// En preview → <span data-cslp="menu_visual_bloc...">Nouveautés</span>
+// En SSR     → <span>Nouveautés</span>`}
+    />
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- RESSOURCES -->
+  <!-- ================================================================== -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://www.contentstack.com/docs/developers/set-up-live-preview"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Contentstack Live Preview Docs</span>
+        <span class="text-gray-400">&nearr;</span>
+      </a>
+      <a
+        href="https://www.contentstack.com/docs/developers/set-up-visual-builder"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Visual Builder Docs</span>
+        <span class="text-gray-400">&nearr;</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/guides/data-fetching"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">&larr; Pr&eacute;c&eacute;dent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">R&eacute;cup&eacute;ration de donn&eacute;es</div>
+    </a>
+    <a
+      href="/guides/contentstack-cli"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Contentstack CLI &rarr;</div>
+    </a>
+  </div>
+</DocsLayout>

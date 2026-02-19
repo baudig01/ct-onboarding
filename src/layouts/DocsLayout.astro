@@ -1,0 +1,271 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+// Helper function to check if link is active
+const isActive = (path: string) => {
+  if (path === '/' && currentPath === '/') return true;
+  if (path !== '/' && currentPath.startsWith(path)) return true;
+  return false;
+};
+
+// Active and inactive link classes
+const activeLinkClass = "block px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-medium";
+const inactiveLinkClass = "block px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20";
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <script is:inline>
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        document.documentElement.classList.toggle('dark', e.matches);
+      });
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description || "Documentation commercetools - Migration e-commerce"} />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | CommerceTools Docs</title>
+  </head>
+  <body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-50">
+      <div class="h-full px-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <!-- Hamburger Menu Button (Mobile) -->
+          <button
+            id="mobile-menu-button"
+            class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Toggle menu"
+          >
+            <svg class="w-6 h-6 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <a href="/" class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg"></div>
+            <span class="text-xl font-bold text-gray-900 dark:text-white">Commercetools</span>
+          </a>
+          <span class="hidden md:block text-sm text-gray-500 dark:text-gray-400">Documentation</span>
+        </div>
+
+        <!-- Spacer -->
+        <div class="hidden md:flex flex-1 max-w-md mx-8"></div>
+
+        <div class="flex items-center gap-4">
+          <a
+            href="https://docs.astro.build"
+            target="_blank"
+            class="hidden sm:block text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400"
+          >
+            GitHub
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+      <nav class="p-4">
+        <div class="space-y-6">
+          <!-- Home -->
+          <div>
+            <a href="/" class={isActive('/') && currentPath === '/' ? activeLinkClass + ' font-medium' : 'block px-3 py-2 rounded-lg text-gray-900 dark:text-white hover:bg-purple-50 dark:hover:bg-purple-900/20 font-medium'}>
+              🏠 Accueil
+            </a>
+          </div>
+
+          <!-- Architecture -->
+          <div>
+            <h3 class="px-3 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3 mt-1">
+              Architecture
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="/architecture/overview" class={isActive('/architecture/overview') ? activeLinkClass : inactiveLinkClass}>
+                  Vue d'ensemble
+                </a>
+              </li>
+              <li>
+                <a href="/architecture/islands" class={isActive('/architecture/islands') ? activeLinkClass : inactiveLinkClass}>
+                  Islands Architecture
+                </a>
+              </li>
+              <li>
+                <a href="/architecture/data-flow" class={isActive('/architecture/data-flow') ? activeLinkClass : inactiveLinkClass}>
+                  Flux de données
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Stack Technique -->
+          <div>
+            <h3 class="px-3 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3 mt-1">
+              Stack Technique
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="/stack/astro" class={isActive('/stack/astro') ? activeLinkClass : inactiveLinkClass}>
+                  Astro
+                </a>
+              </li>
+              <li>
+                <a href="/stack/preact" class={isActive('/stack/preact') ? activeLinkClass : inactiveLinkClass}>
+                  Preact & Signals
+                </a>
+              </li>
+              <li>
+                <a href="/stack/commercetools" class={isActive('/stack/commercetools') ? activeLinkClass : inactiveLinkClass}>
+                  CommerceTools
+                </a>
+              </li>
+              <li>
+                <a href="/stack/contentstack" class={isActive('/stack/contentstack') ? activeLinkClass : inactiveLinkClass}>
+                  Contentstack
+                </a>
+              </li>
+              <li>
+                <a href="/stack/tailwind" class={isActive('/stack/tailwind') ? activeLinkClass : inactiveLinkClass}>
+                  Tailwind CSS
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Guides -->
+          <div>
+            <h3 class="px-3 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3 mt-1">
+              Guides Pratiques
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="/guides/data-fetching" class={isActive('/guides/data-fetching') ? activeLinkClass : inactiveLinkClass}>
+                  Récupération de données
+                </a>
+              </li>
+              <li>
+                <a href="/guides/live-preview" class={isActive('/guides/live-preview') ? activeLinkClass : inactiveLinkClass}>
+                  Live Preview
+                </a>
+              </li>
+              <li>
+                <a href="/guides/contentstack-cli" class={isActive('/guides/contentstack-cli') ? activeLinkClass : inactiveLinkClass}>
+                  Contentstack CLI
+                </a>
+              </li>
+              <li>
+                <a href="/guides/methodology" class={isActive('/guides/methodology') ? activeLinkClass : inactiveLinkClass}>
+                  Méthodologie
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Examples -->
+          <div>
+            <h3 class="px-3 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3 mt-1">
+              Exemples de Code
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="/examples/components" class={isActive('/examples/components') ? activeLinkClass : inactiveLinkClass}>
+                  Composants
+                </a>
+              </li>
+              <li>
+                <a href="/examples/signals" class={isActive('/examples/signals') ? activeLinkClass : inactiveLinkClass}>
+                  Signals Stores
+                </a>
+              </li>
+              <li>
+                <a href="/examples/api-routes" class={isActive('/examples/api-routes') ? activeLinkClass : inactiveLinkClass}>
+                  API Routes
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Resources -->
+          <div>
+            <h3 class="px-3 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3 mt-1">
+              Ressources
+            </h3>
+            <ul class="space-y-1">
+              <li>
+                <a href="/resources/links" class={isActive('/resources/links') ? activeLinkClass : inactiveLinkClass}>
+                  Liens utiles
+                </a>
+              </li>
+              <li>
+                <a href="/resources/commands" class={isActive('/resources/commands') ? activeLinkClass : inactiveLinkClass}>
+                  Commandes
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 mt-16 min-h-screen">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <slot />
+      </div>
+    </main>
+
+    <!-- Mobile Menu Toggle Script -->
+    <script>
+      const menuButton = document.getElementById('mobile-menu-button');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobile-menu-overlay');
+
+      function toggleMenu() {
+        sidebar?.classList.toggle('-translate-x-full');
+        overlay?.classList.toggle('hidden');
+      }
+
+      menuButton?.addEventListener('click', toggleMenu);
+      overlay?.addEventListener('click', toggleMenu);
+
+      // Close menu on escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !overlay?.classList.contains('hidden')) {
+          toggleMenu();
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* Code blocks styling */
+  pre {
+    @apply rounded-lg p-4 overflow-x-auto bg-gray-900 text-gray-100;
+  }
+
+  code {
+    @apply text-sm font-mono;
+  }
+
+  /* Inline code */
+  :not(pre) > code {
+    @apply px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300;
+  }
+</style>

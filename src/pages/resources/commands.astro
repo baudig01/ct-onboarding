@@ -1,0 +1,524 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Commandes Utiles">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Commandes Utiles
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Liste complète des commandes pour le développement, le build, et le déploiement
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Développement Astro
+    </h2>
+
+    <CodeBlock
+      title="Commandes de développement"
+      lang="bash"
+      code={`# Installer les dépendances
+npm install
+
+# Développement (tous les projets)
+npm run dev
+
+# Développement par marque
+npm run dev:etam      # Port 4321
+npm run dev:undiz     # Port 4322
+npm run dev:maison123 # Port 4323
+
+# Build de production
+npm run build
+npm run build:etam
+npm run build:undiz
+npm run build:maison123
+
+# Preview du build
+npm run preview
+
+# Linting
+npm run lint
+npm run lint:fix`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Git
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Workflow de Base
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Cloner le repository
+git clone https://github.com/your-org/project.git
+cd project
+
+# Créer une nouvelle branche
+git checkout -b feature/my-feature
+
+# Voir le statut
+git status
+
+# Ajouter des fichiers
+git add .
+git add src/pages/product.astro
+
+# Committer
+git commit -m "feat: add product page"
+
+# Pousser la branche
+git push origin feature/my-feature
+
+# Créer une pull request
+# Aller sur GitHub et créer la PR`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Commandes Avancées
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Mettre à jour depuis main
+git fetch origin
+git rebase origin/main
+
+# Annuler des changements locaux
+git checkout -- src/file.ts
+
+# Voir l'historique
+git log --oneline
+git log --graph --all
+
+# Stash (mettre de côté)
+git stash
+git stash pop
+
+# Voir les différences
+git diff
+git diff --staged`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      NPM / Package Management
+    </h2>
+
+    <CodeBlock
+      title="Gestion des packages"
+      lang="bash"
+      code={`# Installer un package
+npm install package-name
+npm install -D package-name  # Dev dependency
+
+# Désinstaller un package
+npm uninstall package-name
+
+# Mettre à jour les packages
+npm update
+npm outdated  # Voir les packages obsolètes
+
+# Nettoyer node_modules
+rm -rf node_modules package-lock.json
+npm install
+
+# Exécuter un script
+npm run dev
+npm run build
+
+# Voir les scripts disponibles
+npm run`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Contentstack CLI
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Installation et Auth
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Installer la CLI
+npm install -g @contentstack/cli
+
+# Se connecter
+csdx auth:login
+
+# Lister les stacks
+csdx cm:stacks:list
+
+# Se déconnecter
+csdx auth:logout`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export / Import
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter tout le stack
+csdx cm:stacks:export --stack-api-key <API_KEY>
+
+# Exporter les content types uniquement
+csdx cm:stacks:export \\
+  --stack-api-key <API_KEY> \\
+  --content-types \\
+  --data-dir ./backup
+
+# Exporter avec entries et assets
+csdx cm:stacks:export \\
+  --stack-api-key <API_KEY> \\
+  --content-types \\
+  --entries \\
+  --assets \\
+  --data-dir ./backup
+
+# Importer
+csdx cm:stacks:import \\
+  --stack-api-key <API_KEY> \\
+  --data-dir ./backup`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Content Types
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Lister les content types
+csdx cm:content-types:list --stack-api-key <API_KEY>
+
+# Voir les détails d'un content type
+csdx cm:content-types:get \\
+  --stack-api-key <API_KEY> \\
+  --uid menu_visual_bloc`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      TypeScript
+    </h2>
+
+    <CodeBlock
+      title="Commandes TypeScript"
+      lang="bash"
+      code={`# Vérifier les types
+npx tsc --noEmit
+
+# Générer les types
+npx tsc --declaration --emitDeclarationOnly
+
+# Watch mode
+npx tsc --watch`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      VS Code
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Raccourcis Clavier</h3>
+        <div class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+          <p><code>Ctrl+P</code> - Ouvrir un fichier rapidement</p>
+          <p><code>Ctrl+Shift+P</code> - Palette de commandes</p>
+          <p><code>Ctrl+B</code> - Toggle sidebar</p>
+          <p><code>Ctrl+`</code> - Toggle terminal</p>
+          <p><code>Ctrl+Shift+F</code> - Recherche globale</p>
+          <p><code>F2</code> - Renommer symbole</p>
+          <p><code>Ctrl+.</code> - Quick fix</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Extensions Recommandées</h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Installer les extensions
+code --install-extension astro-build.astro-vscode
+code --install-extension bradlc.vscode-tailwindcss
+code --install-extension dbaeumer.vscode-eslint
+code --install-extension esbenp.prettier-vscode`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Debugging
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Browser DevTools
+        </h3>
+        <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <p><code>F12</code> - Ouvrir DevTools</p>
+            <p><code>Ctrl+Shift+C</code> - Inspecteur d'éléments</p>
+            <p><code>Ctrl+Shift+J</code> - Console JavaScript</p>
+            <p><code>Ctrl+Shift+M</code> - Mode responsive</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Console Logging
+        </h3>
+        <CodeBlock
+          lang="typescript"
+          code={`// Dans Astro (frontmatter) - logs côté serveur
+console.log("Server log:", data);
+
+// Dans Preact (composant) - logs côté client
+console.log("Client log:", state);
+
+// Log avec style
+console.log("%c Important", "color: red; font-size: 20px");
+
+// Log d'objets
+console.table(array);
+console.dir(object, { depth: null });`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Performance & Audit
+    </h2>
+
+    <CodeBlock
+      title="Analyser les performances"
+      lang="bash"
+      code={`# Lighthouse CLI
+npm install -g lighthouse
+lighthouse https://localhost:4321 --view
+
+# Bundle analyzer (si configuré)
+npm run build
+npm run analyze
+
+# Vérifier la taille des bundles
+du -sh dist/
+du -sh dist/_astro/*`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Utilitaires Système
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Commandes Bash Courantes
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Navigation
+cd projet          # Aller dans un dossier
+cd ..              # Remonter d'un niveau
+pwd                # Afficher le chemin actuel
+ls                 # Lister les fichiers
+ls -la             # Lister avec détails
+
+# Manipulation fichiers
+mkdir dossier      # Créer un dossier
+touch fichier.ts   # Créer un fichier
+rm fichier.ts      # Supprimer un fichier
+rm -rf dossier     # Supprimer un dossier
+cp source dest     # Copier
+mv source dest     # Déplacer/Renommer
+
+# Recherche
+find . -name "*.ts"              # Trouver des fichiers
+grep -r "searchTerm" src/        # Rechercher dans fichiers
+grep -r "TODO" --include="*.ts"  # Recherche filtrée
+
+# Processus
+ps aux | grep node  # Voir les processus Node
+kill -9 <PID>       # Tuer un processus
+lsof -i :4321       # Voir qui utilise le port 4321`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Variables d'Environnement
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Créer un fichier .env
+cat > .env << EOF
+PUBLIC_API_URL=https://api.example.com
+CONTENTSTACK_API_KEY=your_key
+CONTENTSTACK_DELIVERY_TOKEN=your_token
+EOF
+
+# Copier le template
+cp .env.example .env
+
+# Vérifier les variables
+cat .env
+
+# Utiliser dans les commandes
+NODE_ENV=production npm run build`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Scripts Personnalisés
+    </h2>
+
+    <Callout type="info">
+      Créez des scripts bash personnalisés pour automatiser les tâches répétitives.
+    </Callout>
+
+    <div class="mt-6">
+      <CodeBlock
+        title="scripts/reset-dev.sh - Reset environnement dev"
+        lang="bash"
+        code={`#!/bin/bash
+
+echo "🧹 Nettoyage de l'environnement..."
+
+# Supprimer node_modules et lock
+rm -rf node_modules package-lock.json
+
+# Supprimer le dossier dist
+rm -rf dist
+
+# Nettoyer le cache Astro
+rm -rf .astro
+
+# Réinstaller les dépendances
+echo "📦 Installation des dépendances..."
+npm install
+
+echo "✅ Environnement reset !"`}
+      />
+
+      <CodeBlock
+        title="scripts/quick-commit.sh - Commit rapide"
+        lang="bash"
+        code={`#!/bin/bash
+
+# Usage: ./scripts/quick-commit.sh "Mon message de commit"
+
+if [ -z "$1" ]; then
+  echo "❌ Erreur: message de commit requis"
+  echo "Usage: ./scripts/quick-commit.sh \"message\""
+  exit 1
+fi
+
+git add .
+git commit -m "$1"
+git push
+
+echo "✅ Commit et push réussi !"`}
+      />
+
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+        Rendre les scripts exécutables : <code>chmod +x scripts/*.sh</code>
+      </p>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Cheatsheet Rapide
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 class="font-semibold text-purple-900 dark:text-purple-100 mb-3">Développement</h3>
+        <div class="text-sm text-purple-800 dark:text-purple-200 space-y-1 font-mono">
+          <p>npm run dev:etam</p>
+          <p>npm run build</p>
+          <p>npm run lint</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-3">Git</h3>
+        <div class="text-sm text-blue-800 dark:text-blue-200 space-y-1 font-mono">
+          <p>git status</p>
+          <p>git add .</p>
+          <p>git commit -m "message"</p>
+          <p>git push</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-3">Contentstack</h3>
+        <div class="text-sm text-green-800 dark:text-green-200 space-y-1 font-mono">
+          <p>csdx auth:login</p>
+          <p>csdx cm:stacks:list</p>
+          <p>csdx cm:stacks:export</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-3">Debug</h3>
+        <div class="text-sm text-yellow-800 dark:text-yellow-200 space-y-1 font-mono">
+          <p>console.log(data)</p>
+          <p>F12 (DevTools)</p>
+          <p>npx tsc --noEmit</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/resources/links"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Liens Utiles</div>
+    </a>
+    <a
+      href="/"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Retour</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Accueil →</div>
+    </a>
+  </div>
+</DocsLayout>

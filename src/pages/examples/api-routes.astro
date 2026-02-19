@@ -1,0 +1,611 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Exemples API Routes">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Exemples d'API Routes
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Patterns d'API routes Astro pour gérer les actions utilisateur et les mutations de données
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Structure de Base
+    </h2>
+
+    <Callout type="info">
+      Les API routes sont des fichiers .ts dans <code>pages/api/</code> qui exportent des fonctions HTTP (GET, POST, PUT, DELETE).
+    </Callout>
+
+    <CodeBlock
+      title="pages/api/example.ts - Template de base"
+      lang="typescript"
+      code={`import type { APIRoute } from "astro";
+
+export const GET: APIRoute = async ({ request, cookies, params }) => {
+  // Logique GET
+  return new Response(JSON.stringify({ data: "..." }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    const body = await request.json();
+
+    // Validation
+    if (!body.field) {
+      return new Response(
+        JSON.stringify({ error: "field_required" }),
+        { status: 400 }
+      );
+    }
+
+    // Logique métier
+    const result = await doSomething(body);
+
+    return new Response(JSON.stringify({ success: true, result }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("API Error:", error);
+
+    return new Response(
+      JSON.stringify({ error: "internal_error" }),
+      { status: 500 }
+    );
+  }
+};`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 1 : Gestion du Panier
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          GET /api/cart - Récupérer le panier
+        </h3>
+        <CodeBlock
+          title="pages/api/cart/index.ts"
+          lang="typescript"
+          code={`import type { APIRoute } from "astro";
+import { getCart } from "../../../lib/services/cart.service";
+
+export const GET: APIRoute = async ({ cookies }) => {
+  const cartId = cookies.get("cartId")?.value;
+
+  if (!cartId) {
+    return new Response(
+      JSON.stringify({ cart: null }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  try {
+    const cart = await getCart(cartId);
+
+    return new Response(JSON.stringify({ cart }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "cart_load_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          POST /api/cart/add - Ajouter au panier
+        </h3>
+        <CodeBlock
+          title="pages/api/cart/add.ts"
+          lang="typescript"
+          code={`import type { APIRoute } from "astro";
+import { addToCart } from "../../../lib/services/cart.service";
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    const { productId, variantId, quantity } = await request.json();
+
+    // Validation
+    if (!productId || !variantId) {
+      return new Response(
+        JSON.stringify({ error: "invalid_payload" }),
+        { status: 400 }
+      );
+    }
+
+    const cartId = cookies.get("cartId")?.value;
+
+    // Ajouter au panier
+    const cart = await addToCart(cartId, {
+      productId,
+      variantId,
+      quantity: quantity || 1,
+    });
+
+    // Sauvegarder le cartId dans un cookie
+    cookies.set("cartId", cart.id, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 jours
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+    });
+
+    return new Response(JSON.stringify({ cart }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Add to cart error:", error);
+
+    return new Response(
+      JSON.stringify({ error: "add_to_cart_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          POST /api/cart/remove - Retirer du panier
+        </h3>
+        <CodeBlock
+          title="pages/api/cart/remove.ts"
+          lang="typescript"
+          code={`import type { APIRoute } from "astro";
+import { removeFromCart } from "../../../lib/services/cart.service";
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    const { lineItemId } = await request.json();
+    const cartId = cookies.get("cartId")?.value;
+
+    if (!cartId) {
+      return new Response(
+        JSON.stringify({ error: "no_cart" }),
+        { status: 400 }
+      );
+    }
+
+    const cart = await removeFromCart(cartId, lineItemId);
+
+    return new Response(JSON.stringify({ cart }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "remove_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          POST /api/cart/update-quantity - Modifier quantité
+        </h3>
+        <CodeBlock
+          title="pages/api/cart/update-quantity.ts"
+          lang="typescript"
+          code={`import type { APIRoute } from "astro";
+import { updateLineItemQuantity } from "../../../lib/services/cart.service";
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    const { lineItemId, quantity } = await request.json();
+    const cartId = cookies.get("cartId")?.value;
+
+    if (!cartId) {
+      return new Response(
+        JSON.stringify({ error: "no_cart" }),
+        { status: 400 }
+      );
+    }
+
+    if (quantity < 1) {
+      return new Response(
+        JSON.stringify({ error: "invalid_quantity" }),
+        { status: 400 }
+      );
+    }
+
+    const cart = await updateLineItemQuantity(cartId, lineItemId, quantity);
+
+    return new Response(JSON.stringify({ cart }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "update_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 2 : Wishlist
+    </h2>
+
+    <CodeBlock
+      title="pages/api/wishlist/toggle.ts"
+      lang="typescript"
+      code={`import type { APIRoute } from "astro";
+import { getWishlist, addToWishlist, removeFromWishlist } from "../../../lib/services/wishlist.service";
+
+export const POST: APIRoute = async ({ request, cookies }) => {
+  try {
+    const { productId, variantId } = await request.json();
+    const wishlistId = cookies.get("wishlistId")?.value;
+
+    // Récupérer la wishlist actuelle
+    let wishlist;
+    if (wishlistId) {
+      wishlist = await getWishlist(wishlistId);
+    }
+
+    // Vérifier si le produit est déjà dans la wishlist
+    const isInWishlist = wishlist?.items.some(
+      (item) => item.productId === productId
+    );
+
+    // Toggle
+    if (isInWishlist) {
+      wishlist = await removeFromWishlist(wishlistId, productId);
+    } else {
+      wishlist = await addToWishlist(wishlistId, productId, variantId);
+    }
+
+    // Sauvegarder le cookie
+    cookies.set("wishlistId", wishlist.id, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 an
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+    });
+
+    return new Response(
+      JSON.stringify({
+        wishlist,
+        added: !isInWishlist,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Wishlist toggle error:", error);
+
+    return new Response(
+      JSON.stringify({ error: "wishlist_toggle_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 3 : Newsletter
+    </h2>
+
+    <CodeBlock
+      title="pages/api/newsletter/subscribe.ts"
+      lang="typescript"
+      code={`import type { APIRoute } from "astro";
+import { subscribeToNewsletter } from "../../../lib/services/newsletter.service";
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const { email } = await request.json();
+
+    // Validation email
+    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "invalid_email" }),
+        { status: 400 }
+      );
+    }
+
+    // S'abonner (appel à un service externe, ex: Mailchimp)
+    await subscribeToNewsletter(email);
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: any) {
+    // Gérer les cas spécifiques
+    if (error.message === "already_subscribed") {
+      return new Response(
+        JSON.stringify({ error: "already_subscribed" }),
+        { status: 409 }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: "subscription_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 4 : Contact Form
+    </h2>
+
+    <CodeBlock
+      title="pages/api/contact/submit.ts"
+      lang="typescript"
+      code={`import type { APIRoute } from "astro";
+import { sendContactEmail } from "../../../lib/services/email.service";
+
+interface ContactPayload {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const payload: ContactPayload = await request.json();
+
+    // Validation
+    const errors: Record<string, string> = {};
+
+    if (!payload.name || payload.name.length < 2) {
+      errors.name = "Le nom doit contenir au moins 2 caractères";
+    }
+
+    if (!payload.email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(payload.email)) {
+      errors.email = "Email invalide";
+    }
+
+    if (!payload.subject || payload.subject.length < 5) {
+      errors.subject = "Le sujet doit contenir au moins 5 caractères";
+    }
+
+    if (!payload.message || payload.message.length < 10) {
+      errors.message = "Le message doit contenir au moins 10 caractères";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return new Response(
+        JSON.stringify({ errors }),
+        { status: 400 }
+      );
+    }
+
+    // Envoyer l'email
+    await sendContactEmail(payload);
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Contact form error:", error);
+
+    return new Response(
+      JSON.stringify({ error: "send_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 5 : Search API
+    </h2>
+
+    <CodeBlock
+      title="pages/api/search.ts"
+      lang="typescript"
+      code={`import type { APIRoute } from "astro";
+import { searchProducts } from "../../lib/services/search.service";
+
+export const GET: APIRoute = async ({ url }) => {
+  try {
+    const query = url.searchParams.get("q");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    if (!query || query.length < 2) {
+      return new Response(
+        JSON.stringify({ results: [] }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Rechercher
+    const results = await searchProducts(query, { limit });
+
+    return new Response(
+      JSON.stringify({ results, query }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60", // Cache 1 minute
+        },
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: "search_failed" }),
+      { status: 500 }
+    );
+  }
+};`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Bonnes Pratiques
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Validation</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          Toujours valider les inputs côté serveur. Ne jamais faire confiance aux données du client.
+        </p>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Error Handling</h3>
+        <p class="text-sm text-green-800 dark:text-green-200">
+          Utiliser try/catch et retourner des codes HTTP appropriés (400 pour validation, 500 pour erreur serveur).
+        </p>
+      </div>
+
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 class="font-semibold text-purple-900 dark:text-purple-100 mb-2">Sécurité</h3>
+        <p class="text-sm text-purple-800 dark:text-purple-200">
+          Utiliser httpOnly pour les cookies sensibles. Activer secure en production. Protéger contre le CSRF.
+        </p>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Logging</h3>
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+          Logger les erreurs avec console.error pour faciliter le debug. Ne jamais exposer les détails d'erreur au client.
+        </p>
+      </div>
+
+      <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <h3 class="font-semibold text-red-900 dark:text-red-100 mb-2">Rate Limiting</h3>
+        <p class="text-sm text-red-800 dark:text-red-200">
+          Implémenter du rate limiting pour les endpoints sensibles (login, newsletter, etc.).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Codes HTTP Standards
+    </h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-100 dark:bg-gray-800">
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Code</th>
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Signification</th>
+            <th class="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Quand utiliser</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">200</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">OK</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Succès général</td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-900">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">201</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Created</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Ressource créée</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">400</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Bad Request</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Erreur de validation</td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-900">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">401</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Unauthorized</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Non authentifié</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">403</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Forbidden</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Pas les droits</td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-900">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">404</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Not Found</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Ressource inexistante</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">409</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Conflict</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Conflit (ex: email déjà utilisé)</td>
+          </tr>
+          <tr class="bg-gray-50 dark:bg-gray-900">
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold">500</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Internal Error</td>
+            <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">Erreur serveur inattendue</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/examples/signals"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Signals Stores</div>
+    </a>
+    <a
+      href="/resources/links"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Liens Utiles →</div>
+    </a>
+  </div>
+</DocsLayout>

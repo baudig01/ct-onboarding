@@ -1,0 +1,215 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+import Card from '../components/Card.astro';
+import Callout from '../components/Callout.astro';
+---
+
+<DocsLayout title="Accueil" description="Documentation du projet de migration e-commerce">
+  <!-- Hero Section -->
+  <div class="mb-12">
+    <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-4">
+      Guide d'Onboarding Commercetools
+    </h1>
+    <p class="text-xl text-gray-600 dark:text-gray-400 mb-6">
+      Documentation complète pour les développeurs rejoignant le projet de migration e-commerce
+    </p>
+    <div class="flex gap-4">
+      <a
+        href="/architecture/overview"
+        class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+      >
+        Commencer
+      </a>
+      <a
+        href="/guides/methodology"
+        class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
+      >
+        Méthodologie
+      </a>
+    </div>
+  </div>
+
+  <!-- Project Overview -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+      Vue d'ensemble du projet
+    </h2>
+
+    <Callout type="info" title="Contexte">
+      POC de migration de nos sites e-commerce (Etam, Undiz, Maison123) de <strong>Salesforce SFRA</strong> vers une architecture moderne basée sur <strong>CommerceTools</strong> et <strong>Contentstack</strong>.
+    </Callout>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-6">
+      <div class="bg-gradient-to-br from-purple-500 to-pink-500 p-6 rounded-lg text-white">
+        <h3 class="text-xl font-bold mb-2">CommerceTools</h3>
+        <p class="opacity-90">Gestion des produits, du panier et des commandes via une API moderne et scalable</p>
+      </div>
+      <div class="bg-gradient-to-br from-blue-500 to-cyan-500 p-6 rounded-lg text-white">
+        <h3 class="text-xl font-bold mb-2">Contentstack</h3>
+        <p class="opacity-90">Gestion du contenu éditorial avec CMS headless et Live Preview en temps réel</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Brands -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+      Marques concernées
+    </h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+        <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">ETAM</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Lingerie & Vêtements</div>
+      </div>
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">UNDIZ</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Sous-vêtements fun</div>
+      </div>
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">MAISON123</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Prêt-à-porter</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Objectives -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+      Objectifs techniques
+    </h2>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="flex gap-4">
+        <div class="text-3xl">⚡</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Performance</h3>
+          <p class="text-gray-600 dark:text-gray-400">SSR avec hydratation partielle via Islands Architecture</p>
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <div class="text-3xl">🎨</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Multi-marques</h3>
+          <p class="text-gray-600 dark:text-gray-400">Un seul codebase avec theming par marque</p>
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <div class="text-3xl">✏️</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Édition Live</h3>
+          <p class="text-gray-600 dark:text-gray-400">Les contributeurs voient leurs modifications en temps réel</p>
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <div class="text-3xl">🔄</div>
+        <div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Migration Progressive</h3>
+          <p class="text-gray-600 dark:text-gray-400">Passage vers BFF (Back-to-Front) à terme</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stack Technique Quick Links -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+      Stack Technique
+    </h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card
+        title="Astro"
+        description="Framework SSR avec Islands Architecture pour un bundle minimal"
+        icon="🚀"
+        href="/stack/astro"
+      />
+      <Card
+        title="Preact & Signals"
+        description="Composants UI légers (3KB) + state management réactif"
+        icon="⚛️"
+        href="/stack/preact"
+      />
+      <Card
+        title="CommerceTools"
+        description="Backend e-commerce API-first et scalable"
+        icon="🛒"
+        href="/stack/commercetools"
+      />
+      <Card
+        title="Contentstack"
+        description="CMS Headless avec Live Preview"
+        icon="📝"
+        href="/stack/contentstack"
+      />
+      <Card
+        title="Tailwind CSS v4"
+        description="Styling avec design tokens et theming"
+        icon="🎨"
+        href="/stack/tailwind"
+      />
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+      Démarrage rapide
+    </h2>
+    <div class="space-y-4">
+      <div class="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold">
+          1
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Comprendre l'architecture</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-2">Découvrez Islands Architecture et le flux de données</p>
+          <a href="/architecture/overview" class="text-purple-600 dark:text-purple-400 hover:underline text-sm">Voir l'architecture →</a>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold">
+          2
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Explorer la stack technique</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-2">Familiarisez-vous avec Astro, Preact Signals et les autres technologies</p>
+          <a href="/stack/astro" class="text-purple-600 dark:text-purple-400 hover:underline text-sm">Explorer la stack →</a>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold">
+          3
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Suivre la méthodologie</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-2">Apprenez notre processus d'implémentation des features</p>
+          <a href="/guides/methodology" class="text-purple-600 dark:text-purple-400 hover:underline text-sm">Voir la méthodologie →</a>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center font-bold">
+          4
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-1">Consulter les exemples</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-2">Parcourez nos exemples de code et patterns</p>
+          <a href="/examples/components" class="text-purple-600 dark:text-purple-400 hover:underline text-sm">Voir les exemples →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resources -->
+  <section>
+    <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Ressources & liens utiles</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Documentation externe, commandes, outils</p>
+      </div>
+      <a href="/resources/links" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
+        Voir les ressources →
+      </a>
+    </div>
+  </section>
+</DocsLayout>

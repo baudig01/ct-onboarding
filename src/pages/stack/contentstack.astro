@@ -1,0 +1,792 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Contentstack CMS">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Contentstack
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    CMS headless pour gérer le contenu éditorial et les éléments configurables du site
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Qu'est-ce que Contentstack ?
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-6">
+      Contentstack est un CMS headless qui permet aux équipes marketing et contenu de gérer tous les éléments éditoriaux du site sans toucher au code : banners, menus, pages, SEO, etc.
+    </p>
+
+    <Callout type="info">
+      Contrairement à CommerceTools qui gère les données <strong>transactionnelles</strong>, Contentstack gère le contenu <strong>éditorial</strong>.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Concepts Clés
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Content Types</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          Les schémas de contenus (Banner, Menu, Page). Définissent la structure des entrées.
+        </p>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Entries</h3>
+        <p class="text-sm text-green-800 dark:text-green-200">
+          Les instances de contenu. Ex: "Banner Homepage Hiver 2024" est une entry du content type "Banner".
+        </p>
+      </div>
+
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 class="font-semibold text-purple-900 dark:text-purple-100 mb-2">Environments</h3>
+        <p class="text-sm text-purple-800 dark:text-purple-200">
+          Development, Staging, Production. Permet de gérer les versions du contenu.
+        </p>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Locales</h3>
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+          Support multilingue (fr-FR, en-US, etc.). Chaque entry peut avoir plusieurs versions linguistiques.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Flux d'Intégration
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`┌──────────────────────────────────────────────────────────┐
+│                  CONTENTSTACK CMS                         │
+│  Content Type: "homepage"                                │
+│  Entry: Homepage Etam (blocks: banners, crosssell...)    │
+└─────────────────────────┬────────────────────────────────┘
+                          │ Content Delivery API (REST)
+                          ▼
+┌──────────────────────────────────────────────────────────┐
+│          lib/api/contentstack.ts                          │
+│  fetchEntriesByTaxonomy<HomePage>("homepage", "brand", brand) │
+└─────────────────────────┬────────────────────────────────┘
+                          │ Raw CMS Entry (HomePage)
+                          ▼
+┌──────────────────────────────────────────────────────────┐
+│          lib/services/content.service.ts                  │
+│  A. getHomePageEntry() → HomePage (brut, Visual Builder) │
+│  B. getFooterLinksData() → FooterLinksData (mappé, SSR)  │
+└─────────────────────────┬────────────────────────────────┘
+                          │ Typed data
+                          ▼
+┌──────────────────────────────────────────────────────────┐
+│          pages/index.astro (SSR)                          │
+│  const homeEntry = await getHomePageEntry();             │
+│  → passe les données au composant Preact client:load     │
+└──────────────────────────────────────────────────────────┘`}</pre>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple complet : Intégrer la HomePage
+    </h2>
+
+    <Callout type="info">
+      Cet exemple montre le parcours complet pour intégrer un content type Contentstack, de la définition des interfaces jusqu'à l'utilisation dans une page Astro. On prend l'exemple de la <strong>HomePage</strong> qui utilise des <strong>Modular Blocks</strong> (banners, crosssell, grilles).
+    </Callout>
+
+    <div class="mt-8 space-y-8">
+
+      <!-- Étape 1 : Interfaces CMS -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">1</span>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Définir les interfaces du Content Type (Domain Model)
+          </h3>
+        </div>
+
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          Dans <code>lib/domain/content.ts</code>, on modélise la structure exacte du content type tel qu'il est défini dans Contentstack. Chaque interface correspond à un champ ou un bloc du CMS.
+        </p>
+
+        <Callout type="warning">
+          Les noms des champs doivent correspondre <strong>exactement</strong> aux Field UIDs dans Contentstack (snake_case). C'est le contrat entre le CMS et notre code.
+        </Callout>
+
+        <div class="mt-4">
+          <CodeBlock
+            title="lib/domain/content.ts - Interfaces CMS pour la HomePage"
+            lang="typescript"
+            code={`// Base commune à toutes les entries Contentstack
+export interface CSBaseEntry {
+  uid: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  locale: string;
+  _version: number;
+}
+
+// Fichier/image Contentstack
+export interface CTFile {
+  url: string;
+  title: string;
+  filename: string;
+  content_type: string;
+}
+
+// ─── CTA (Call-to-Action) ───────────────────────────────
+export type CtaStyle = "link" | "button-primary" | "button-secondary";
+
+export interface BannerCta {
+  label?: string;
+  url?: string;
+  style?: CtaStyle;
+}
+
+// ─── Content Position ───────────────────────────────────
+export type ContentPosition =
+  | "top-left" | "top-center" | "top-right"
+  | "center-left" | "center" | "center-right"
+  | "bottom-left" | "bottom-center" | "bottom-right";
+
+// ─── FullBanner Global Field ────────────────────────────
+// Réutilisable dans plusieurs content types (homepage, landing pages...)
+export interface FullBannerGlobalField {
+  media_type: "image" | "video";
+  image?: CTFile;
+  video_url?: string;
+  contentbanner?: {
+    content_position?: ContentPosition;
+    title?: string;
+    subtitle?: string;
+    cta?: BannerCta;
+  };
+}
+
+// ─── Crosssell Global Field ────────────────────────────
+export interface CrosssellGlobalField {
+  mode: "manual" | "category";
+  product_skus?: string;      // SKUs séparés par des virgules
+  category_key?: string;
+  limit: number;
+}
+
+// ─── Modular Blocks de la HomePage ──────────────────────
+// Chaque type de bloc correspond à un modular block dans Contentstack
+
+export interface FullBannerPageBlock {
+  fullbanner: FullBannerGlobalField;
+}
+
+export interface CrosssellPageBlock {
+  categorycrosssell?: {
+    title?: string;
+    crosssell_settings: CrosssellGlobalField;
+  };
+  manualcrosssell?: {
+    title?: string;
+    crosssell_settings: CrosssellGlobalField;
+  };
+}
+
+// Union type : un bloc de page peut être l'un de ces types
+export type PageBlockItem =
+  | FullBannerPageBlock
+  | CrosssellPageBlock;
+
+// ─── SEO ────────────────────────────────────────────────
+export interface SeoFields {
+  seo_title?: string;
+  seo_description?: string;
+}
+
+// ─── HomePage Content Type ──────────────────────────────
+// C'est l'entry principale, elle étend CSBaseEntry
+export interface HomePage extends CSBaseEntry {
+  taxonomies: { taxonomy_uid: string; term_uid: string }[];
+  seo?: SeoFields;
+  blocks: PageBlockItem[];   // Modular Blocks ordonnés
+}`}
+          />
+        </div>
+      </div>
+
+      <!-- Étape 2 : Service Layer -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">2</span>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Créer le Service Layer (content.service.ts)
+          </h3>
+        </div>
+
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          Le service fait le pont entre l'API Contentstack et nos pages Astro. Mais selon que le contenu doit supporter le <strong>Visual Builder</strong> (Live Preview) ou non, l'approche est différente :
+        </p>
+
+        <!-- Les deux approches -->
+        <div class="p-5 rounded-lg border-2 border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 mb-6">
+          <h4 class="font-bold text-yellow-800 dark:text-yellow-200 mb-4">Deux approches selon le cas d'usage</h4>
+
+          <div class="grid gap-4 sm:grid-cols-2 mb-4">
+            <!-- Approche A : Avec Visual Builder -->
+            <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-orange-300 dark:border-orange-700">
+              <div class="font-bold text-orange-600 dark:text-orange-400 text-sm mb-2">A. Avec Visual Builder (HomePage, Banner...)</div>
+              <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <p>Le composant reçoit l'entry <strong>brute CMS</strong> et travaille directement avec les types Domain (<code>HomePage</code>, <code>FullBannerGlobalField</code>...).</p>
+                <p><strong>Pourquoi ?</strong> Quand <code>addEditableTags</code> est appelé sur une entry, il ajoute des propriétés <code>$</code> à chaque champ :</p>
+                <pre class="text-xs font-mono bg-gray-100 dark:bg-gray-900 p-2 rounded text-gray-700 dark:text-gray-300 overflow-x-auto !bg-gray-100 dark:!bg-gray-900">{`// Après addEditableTags :
+contentbanner: {
+  title: "Hello",
+  $: { title: { "data-cslp": "homepage.blt123..." } }
+}`}</pre>
+                <p>Ces <code>$</code> sont utilisés par <code>getEditableProps()</code> pour rendre les champs cliquables/éditables dans le Visual Builder. <strong>Si on transforme la data avec un mapper, on perd ces <code>$</code></strong> et le Visual Builder ne fonctionne plus.</p>
+              </div>
+              <div class="mt-3 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs text-orange-800 dark:text-orange-300">
+                <strong>Service :</strong> juste un fetch, pas de transformation<br/>
+                <strong>Composant :</strong> lit directement <code>block.contentbanner.title</code>
+              </div>
+            </div>
+
+            <!-- Approche B : Sans Visual Builder -->
+            <div class="p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-green-300 dark:border-green-700">
+              <div class="font-bold text-green-600 dark:text-green-400 text-sm mb-2">B. Sans Visual Builder (Footer Links, Copyright...)</div>
+              <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                <p>Le contenu est rendu <strong>côté serveur uniquement</strong> (pas de <code>client:load</code>). On n'a pas besoin des métadonnées <code>$</code> du Visual Builder.</p>
+                <p><strong>Pourquoi transformer ?</strong> On peut découpler le CMS des composants :</p>
+                <ul class="ml-3 space-y-1">
+                  <li>- <strong>Types UI</strong> en camelCase pour les composants</li>
+                  <li>- <strong>Mappers</strong> qui traduisent CMS vers UI</li>
+                  <li>- Si le CMS change un champ, on modifie le mapper, <strong>pas les composants</strong></li>
+                </ul>
+              </div>
+              <div class="mt-3 p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs text-green-800 dark:text-green-300">
+                <strong>Service :</strong> fetch + mapper (Types UI, transformation)<br/>
+                <strong>Composant :</strong> lit <code>section.title</code>, <code>link.href</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 bg-white dark:bg-gray-800 rounded border border-yellow-200 dark:border-yellow-800">
+            <p class="text-sm text-gray-700 dark:text-gray-300">
+              <strong>Règle simple :</strong> si le composant est hydraté côté client avec <code>client:load</code> et supporte le Live Preview → <strong>entry brute</strong>. Si c'est du rendu serveur pur (Astro template) → <strong>on peut mapper</strong>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Exemple A : HomePage (sans mapper) -->
+        <h4 class="text-lg font-semibold text-orange-600 dark:text-orange-400 mb-3">
+          Approche A : HomePage (entry brute pour Visual Builder)
+        </h4>
+        <p class="text-gray-700 dark:text-gray-300 mb-3">
+          Le service ne fait que fetch + filtrer par brand. <strong>Pas de types UI, pas de mappers.</strong> Le composant Preact utilise directement les interfaces du Domain Model.
+        </p>
+
+        <!-- Explication previewParams -->
+        <div class="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 mb-4">
+          <h5 class="font-bold text-blue-800 dark:text-blue-200 text-sm mb-2">Pourquoi <code>previewParams</code> ?</h5>
+          <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+            <p>Quand le Visual Builder ouvre la page, il ajoute des query params :</p>
+            <pre class="text-xs font-mono bg-blue-100 dark:bg-blue-900/40 p-2 rounded overflow-x-auto text-blue-900 dark:text-blue-200">{`?live_preview=abc123&content_type_uid=homepage&entry_uid=blt456`}</pre>
+            <p><code>getPreviewContext(Astro.url)</code> extrait ces params et retourne :</p>
+            <ul class="ml-3 space-y-1">
+              <li>- <code>isPreview: true</code> &mdash; active le mode preview (SDK client, Live Preview)</li>
+              <li>- <code>previewParams</code> &mdash; pass&eacute; au service pour que <code>fetchEntriesByTaxonomy</code> utilise la <strong>Preview API</strong> (contenu draft/non publi&eacute;) au lieu de la Delivery API</li>
+            </ul>
+            <p>Sans <code>previewParams</code>, on est en mode delivery : contenu publi&eacute;, cach&eacute;, rapide.</p>
+          </div>
+        </div>
+
+        <CodeBlock
+          title="lib/services/content.service.ts - HomePage (entry brute)"
+          lang="typescript"
+          code={`import { fetchEntriesByTaxonomy, type PreviewParams } from "../api/contentstack";
+import { getBrand } from "../../utils/brand";
+import type { HomePage } from "../domain/content";
+
+/**
+ * Retourne l'entry brute de la HomePage.
+ * Pas de mapper : le composant client lit directement les champs CMS
+ * pour conserver les métadonnées $ nécessaires au Visual Builder.
+ *
+ * @param options.previewParams - Si présent, fetch via la Preview API
+ *   (contenu draft). Sinon, fetch via la Delivery API (contenu publié + cache).
+ */
+export async function getHomePageEntry(
+  options: { previewParams?: PreviewParams } = {}
+): Promise<HomePage | null> {
+  const brand = getBrand(); // "etam" | "undiz" | "maison123"
+
+  // fetchEntriesByTaxonomy gère les deux modes :
+  //   - Delivery (prod) : fetch all entries → filtre par taxonomy "brand"
+  //   - Preview (Visual Builder) : fetch via Preview API avec les previewParams
+  const result = await fetchEntriesByTaxonomy<HomePage>(
+    "homepage",              // Content Type UID
+    "brand",                 // Taxonomy UID
+    brand,                   // Term UID (filtre par marque)
+    {
+      includeReference: ["blocks"],
+      previewParams: options.previewParams  // undefined en prod, défini en preview
+    }
+  );
+
+  return result.entries[0] ?? null;
+}`}
+        />
+
+        <!-- Exemple B : Footer Links (avec mapper) -->
+        <h4 class="text-lg font-semibold text-green-600 dark:text-green-400 mb-3 mt-8">
+          Approche B : Footer Links (avec Types UI + Mapper)
+        </h4>
+        <p class="text-gray-700 dark:text-gray-300 mb-3">
+          Le footer est rendu côté serveur, pas de Visual Builder. On peut donc transformer les données pour découpler le CMS des composants.
+        </p>
+        <CodeBlock
+          title="lib/services/content.service.ts - Footer Links (avec mapper)"
+          lang="typescript"
+          code={`import { fetchEntriesByTaxonomy } from "../api/contentstack";
+import type { FooterLinksEntry } from "../domain/content";
+
+// ── Types UI : ce que le composant FooterLinks attend ──────
+export interface FooterLinksData {
+  sections: {
+    title: string;
+    links: {
+      label: string;
+      href: string;       // "href" et pas "url" comme dans le CMS
+    }[];
+  }[];
+}
+
+// ── Mapper : CMS (snake_case, imbriqué) → UI (camelCase, aplati) ──
+function mapFooterLinks(entry: FooterLinksEntry): FooterLinksData {
+  return {
+    sections: entry.sections.map((section) => ({
+      title: section.link_section.title,   // CMS: section.link_section.title
+      links: section.link_section.links.map((link) => ({
+        label: link.label,
+        href: link.url,                     // CMS "url" → UI "href"
+      })),
+    })),
+  };
+}
+
+// ── Public API : fetch + map en une seule étape ──
+export async function getFooterLinksData(
+  options: { locale?: string } = {}
+): Promise<FooterLinksData | null> {
+  const brand = getBrand(); // "etam" | "undiz" | "maison123"
+  const csLocale = options.locale?.toLowerCase();
+
+  const result = await fetchEntriesByTaxonomy<FooterLinksEntry>(
+    "footer_links",
+    "brand",              // Taxonomy UID
+    brand,                // Term UID (filtre par marque)
+    { locale: csLocale }
+  );
+
+  const entry = result.entries[0];
+  if (!entry) return null;
+
+  return mapFooterLinks(entry);  // Transformation ici
+}
+// Le composant reçoit FooterLinksData (UI format).
+// Il ne sait pas que Contentstack existe.
+// Si le CMS renomme "url" en "link_url", on touche le mapper,
+// pas le composant.`}
+        />
+
+        <!-- Résumé des deux approches -->
+        <div class="mt-6 overflow-x-auto">
+          <table class="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-gray-800">
+                <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300"></th>
+                <th class="px-4 py-2 text-left text-orange-600 dark:text-orange-400">A. Entry brute</th>
+                <th class="px-4 py-2 text-left text-green-600 dark:text-green-400">B. Avec mapper</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700 dark:text-gray-300">
+              <tr class="border-t border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-2 font-medium">Visual Builder</td>
+                <td class="px-4 py-2">Fonctionne</td>
+                <td class="px-4 py-2">Cassé (perd les <code>$</code>)</td>
+              </tr>
+              <tr class="border-t border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-2 font-medium">Découplage CMS</td>
+                <td class="px-4 py-2">Non (composant couplé)</td>
+                <td class="px-4 py-2">Oui (composant isolé)</td>
+              </tr>
+              <tr class="border-t border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-2 font-medium">Quand l'utiliser</td>
+                <td class="px-4 py-2">Composants <code>client:load</code> avec Live Preview</td>
+                <td class="px-4 py-2">Rendu serveur pur (Astro template)</td>
+              </tr>
+              <tr class="border-t border-gray-200 dark:border-gray-700">
+                <td class="px-4 py-2 font-medium">Exemples</td>
+                <td class="px-4 py-2">HomePage, Banner</td>
+                <td class="px-4 py-2">Footer Links, Copyright, Social Links</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Étape 3 : Utilisation dans la page -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">3</span>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Utiliser dans la page Astro
+          </h3>
+        </div>
+
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          La page Astro orchestre le tout : elle fetch les données côté serveur dans le frontmatter, puis les passe au composant Preact avec <code>client:load</code> pour l'hydratation côté client.
+        </p>
+
+        <CodeBlock
+          title="pages/index.astro - Page d'accueil"
+          lang="astro"
+          code={`---
+import Layout from "../layouts/Layout.astro";
+import { getHomePageEntry } from "../lib/services/content.service";
+import { getPreviewContext } from "../lib/api/contentstack";
+import HomePageContent from "../features/homepage/HomePageContent";
+import { getBrandConfig } from "../config/brands";
+import { getContentstackEnv } from "../utils/contentstack-env";
+
+// SSR obligatoire pour le Live Preview (pas de prerender statique)
+export const prerender = false;
+
+// 1. Détecter si on est en mode preview (Visual Builder)
+//    → isPreview = true si ?live_preview=... dans l'URL ou PUBLIC_IS_PREVIEW=true
+//    → previewParams = les query params pour la Preview API (draft content)
+const { isPreview, previewParams } = getPreviewContext(Astro.url);
+const brandConfig = getBrandConfig();
+const brand = brandConfig.id;
+
+// 2. Fetch l'entry HomePage, filtrée par brand via taxonomy
+//    → En prod : Delivery API (contenu publié, caché)
+//    → En preview : Preview API (contenu draft, grâce à previewParams)
+const homeEntry = await getHomePageEntry({ previewParams });
+
+// SEO : valeurs CMS avec fallback sur la config brand
+const seoTitle = homeEntry?.seo?.seo_title ?? brandConfig.seo.title;
+const seoDescription = homeEntry?.seo?.seo_description ?? brandConfig.seo.description;
+
+// 3. Config Contentstack pour le client (apiKey, tokens, region...)
+//    → Uniquement en preview : le composant client en a besoin pour initialiser le SDK
+//    → En prod : undefined → le composant utilise juste initialData, pas de SDK
+const csConfig = isPreview ? getContentstackEnv() : undefined;
+---
+
+<Layout title={seoTitle} description={seoDescription} headerTransparent={true}>
+  <!-- 4. Passer toutes les props nécessaires au composant Preact -->
+  <HomePageContent
+    brand={brand}
+    isPreview={isPreview}
+    initialData={homeEntry}
+    csConfig={csConfig}
+    client:load
+  />
+</Layout>`}
+        />
+
+        <!-- Explication des 4 props -->
+        <div class="mt-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+          <h5 class="font-bold text-gray-800 dark:text-gray-200 text-sm mb-3">Les 4 props cl&eacute;s pass&eacute;es au composant :</h5>
+          <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <div><code class="text-orange-600 dark:text-orange-400">brand</code> &mdash; identifiant de la marque. Utilis&eacute; par <code>useLivePreview</code> pour filtrer par taxonomy c&ocirc;t&eacute; client en mode preview.</div>
+            <div><code class="text-orange-600 dark:text-orange-400">isPreview</code> &mdash; <code>true</code> = active le SDK Live Preview, <code>false</code> = rendu SSR classique, aucun JS de preview.</div>
+            <div><code class="text-orange-600 dark:text-orange-400">initialData</code> &mdash; l'entry pr&eacute;-fetch&eacute;e c&ocirc;t&eacute; serveur. En prod c'est la seule source. En preview c'est le fallback avant que le SDK soit pr&ecirc;t.</div>
+            <div><code class="text-orange-600 dark:text-orange-400">csConfig</code> &mdash; config Contentstack (apiKey, tokens, region). <strong>Uniquement d&eacute;fini en preview</strong>, le composant s'en sert pour initialiser le SDK client.</div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <Callout type="success">
+            <strong>R&egrave;gle : en prod, z&eacute;ro overhead.</strong> Quand <code>isPreview=false</code>, le composant affiche juste <code>initialData</code>. Pas d'import du SDK, pas de fetch client, pas de <code>data-cslp</code> sur le HTML.
+          </Callout>
+        </div>
+      </div>
+
+      <!-- Étape 4 : Composant Preact -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-sm">4</span>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            Le composant Preact (Live Preview + editable props)
+          </h3>
+        </div>
+
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          Le composant utilise <code>useLivePreview</code> pour g&eacute;rer les deux modes, puis <code>getEditableProps</code> pour rendre les champs &eacute;ditables dans le Visual Builder.
+        </p>
+
+        <!-- Explication useLivePreview -->
+        <div class="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 mb-4">
+          <h5 class="font-bold text-purple-800 dark:text-purple-200 text-sm mb-2">Que fait <code>useLivePreview</code> concr&egrave;tement ?</h5>
+          <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+            <p><strong>En prod</strong> (<code>isPreview=false</code>) : retourne <code>initialData</code> tel quel. Aucun SDK charg&eacute;, aucun fetch client.</p>
+            <p><strong>En preview</strong> (<code>isPreview=true</code>) :</p>
+            <ol class="ml-4 space-y-1">
+              <li>1. Initialise le SDK Contentstack Live Preview (import dynamique)</li>
+              <li>2. Fetch l'entry c&ocirc;t&eacute; client via le SDK (le SDK intercepte les requ&ecirc;tes et retourne le contenu live)</li>
+              <li>3. Filtre par taxonomy (<code>taxonomyUid</code> / <code>termUid</code>) c&ocirc;t&eacute; client</li>
+              <li>4. Appelle <code>addEditableTags(entry)</code> &rarr; ajoute les propri&eacute;t&eacute;s <code>$</code> sur chaque champ</li>
+              <li>5. &Eacute;coute <code>onEntryChange</code> pour re-fetch automatiquement &agrave; chaque modification dans le Visual Builder</li>
+            </ol>
+          </div>
+        </div>
+
+        <CodeBlock
+          title="features/homepage/HomePageContent.tsx"
+          lang="tsx"
+          code={`import type { HomePage } from "../../lib/domain/content";
+import { FullBanner } from "../../components/FullBanner";
+import { getEditableProps } from "../../lib/contentstack-sdk/editable";
+import { useLivePreview } from "../../lib/contentstack-sdk/useLivePreview";
+import type { ContentstackConfig } from "../../utils/contentstack-env";
+
+interface Props {
+  /** Brand pour filtrer par taxonomy en mode preview */
+  brand?: string;
+  /** Active le mode Live Preview (SDK client + Visual Builder) */
+  isPreview?: boolean;
+  /** Entry pré-fetchée côté serveur (SSR) */
+  initialData?: HomePage | null;
+  /** Config Contentstack (défini uniquement en preview) */
+  csConfig?: ContentstackConfig;
+}
+
+export default function HomePageContent({
+  brand, isPreview = false, initialData, csConfig
+}: Props) {
+  // ── useLivePreview ─────────────────────────────────────
+  // En prod  : retourne simplement initialData (zero overhead)
+  // En preview : init SDK → fetch client → addEditableTags → écoute les changements
+  const { entry, isLoading, error } = useLivePreview<HomePage>({
+    contentType: "homepage",
+    taxonomyUid: "brand",        // Taxonomy UID dans Contentstack
+    termUid: brand || "etam",    // La marque à filtrer
+    isPreview,
+    initialData,
+    csConfig,
+  });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (!entry || !entry.blocks) return <p>No content</p>;
+
+  return (
+    <div class="flex flex-col gap-[2px]">
+      {entry.blocks.map((block, index) => {
+        if ("fullbanner" in block && block.fullbanner) {
+          const banner = block.fullbanner;
+          const content = banner.contentbanner;
+
+          return (
+            <FullBanner
+              key={\`fullbanner-\${index}\`}
+              imageUrl={banner.image?.url}
+              title={content?.title}
+              subtitle={content?.subtitle}
+              cta={{
+                label: content?.cta?.label,
+                url: content?.cta?.url,
+                style: content?.cta?.style,
+              }}
+              contentPosition={content?.content_position || "bottom-center"}
+              // ── getEditableProps ──────────────────────
+              // Extrait { "data-cslp": "homepage.blocks.0..." } depuis les $
+              // En prod : $ n'existe pas → retourne {} → aucun attribut HTML
+              // En preview : retourne l'attribut data-cslp → Visual Builder sait quoi éditer
+              editable={{
+                imageProps: getEditableProps(banner, "image"),
+                titleProps: getEditableProps(content, "title"),
+                subtitleProps: getEditableProps(content, "subtitle"),
+                ctaLabelProps: getEditableProps(content?.cta, "label"),
+              }}
+            />
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+}`}
+        />
+
+        <!-- Explication getEditableProps -->
+        <div class="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 mt-4 mb-4">
+          <h5 class="font-bold text-orange-800 dark:text-orange-200 text-sm mb-2">Comment <code>getEditableProps</code> fonctionne</h5>
+          <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+            <p>Apr&egrave;s <code>addEditableTags(entry)</code>, chaque objet re&ccedil;oit une propri&eacute;t&eacute; <code>$</code> :</p>
+            <pre class="text-xs font-mono bg-orange-100 dark:bg-orange-900/40 p-2 rounded overflow-x-auto text-orange-900 dark:text-orange-200">{`// En mémoire après addEditableTags :
+banner.contentbanner = {
+  title: "Nouvelle collection",
+  subtitle: "Printemps 2025",
+  $: {
+    title: { "data-cslp": "homepage.blt123.fr-fr.blocks.0.fullbanner.contentbanner.title" },
+    subtitle: { "data-cslp": "homepage.blt123.fr-fr.blocks.0.fullbanner.contentbanner.subtitle" },
+  }
+}`}</pre>
+            <p><code>getEditableProps(content, "title")</code> retourne <code>{`{ "data-cslp": "homepage.blt123..." }`}</code></p>
+            <p>Dans le composant FullBanner, on spread sur l'&eacute;l&eacute;ment HTML :</p>
+            <pre class="text-xs font-mono bg-orange-100 dark:bg-orange-900/40 p-2 rounded overflow-x-auto text-orange-900 dark:text-orange-200">{`// Dans FullBanner.tsx :
+<h1 {...editable?.titleProps}>{title}</h1>
+
+// Résultat HTML en preview :
+<h1 data-cslp="homepage.blt123...title">Nouvelle collection</h1>
+// → Le Visual Builder détecte data-cslp et rend l'élément cliquable/éditable
+
+// Résultat HTML en prod :
+<h1>Nouvelle collection</h1>
+// → Aucun attribut ajouté, zero overhead`}</pre>
+          </div>
+        </div>
+
+        <Callout type="warning">
+          <strong>Pour chaque nouveau contenu Live Preview</strong>, reproduire ce m&ecirc;me pattern en 4 &eacute;tapes :<br/>
+          <strong>1.</strong> Service : <code>fetchEntriesByTaxonomy</code> avec <code>previewParams</code><br/>
+          <strong>2.</strong> Page Astro : <code>getPreviewContext</code> + <code>getContentstackEnv</code> + passer <code>isPreview</code>/<code>csConfig</code>/<code>initialData</code>/<code>brand</code><br/>
+          <strong>3.</strong> Composant : <code>useLivePreview</code> avec <code>taxonomyUid</code>/<code>termUid</code><br/>
+          <strong>4.</strong> HTML : <code>getEditableProps(obj, "field")</code> spread sur chaque &eacute;l&eacute;ment &eacute;ditable
+        </Callout>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Résumé architecture -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Résumé : quelle approche choisir ?
+    </h2>
+
+    <Callout type="info">
+      La règle est simple : <strong>le Visual Builder impose de garder les données brutes</strong>. Pour tout le reste, on peut (et on devrait) mapper.
+    </Callout>
+
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
+      <div class="p-4 rounded-lg border-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+        <div class="text-lg font-bold text-orange-700 dark:text-orange-300 mb-2">Entry brute (Visual Builder)</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Composants Preact hydratés avec <code>client:load</code></p>
+        <ul class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+          <li>- Service : <code>getXxxEntry()</code> (fetch seul)</li>
+          <li>- Composant lit les types Domain directement</li>
+          <li>- <code>getEditableProps()</code> pour le Visual Builder</li>
+          <li>- <code>useLivePreview()</code> pour le refresh temps réel</li>
+        </ul>
+        <div class="mt-2 text-xs text-orange-700 dark:text-orange-400 font-medium">
+          Ex : HomePage, Banner, Menu Visual Blocs
+        </div>
+      </div>
+
+      <div class="p-4 rounded-lg border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+        <div class="text-lg font-bold text-green-700 dark:text-green-300 mb-2">Avec mapper (rendu serveur)</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Contenu rendu dans le template Astro côté serveur</p>
+        <ul class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+          <li>- Service : Types UI + Mapper + <code>getXxxData()</code></li>
+          <li>- Composant découplé du CMS</li>
+          <li>- Si le CMS change, seul le mapper est modifié</li>
+          <li>- Structure aplatie et simplifiée</li>
+        </ul>
+        <div class="mt-2 text-xs text-green-700 dark:text-green-400 font-medium">
+          Ex : Footer Links, Copyright, Social Links, Header Settings
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Live Preview
+    </h2>
+
+    <Callout type="success">
+      Contentstack propose un <strong>Visual Builder</strong> qui permet d'éditer le contenu directement sur le site en mode preview.
+    </Callout>
+
+    <p class="text-gray-700 dark:text-gray-300 mt-4 mb-4">
+      Pour activer le Live Preview, il faut :
+    </p>
+
+    <ol class="space-y-2 text-gray-700 dark:text-gray-300 ml-6">
+      <li>1. Ajouter le SDK Live Preview dans les pages</li>
+      <li>2. Utiliser <code>getEditableProps()</code> sur les éléments éditables</li>
+      <li>3. Garder les données "raw" avec les métadonnées</li>
+    </ol>
+
+    <CodeBlock
+      title="Exemple avec Live Preview"
+      lang="tsx"
+      code={"import { getEditableProps } from \"../../lib/contentstack-sdk/editable\";\n\nexport function Banner({ data, rawData }) {\n  return (\n    <div>\n      <h1 {...getEditableProps(rawData, \"title\")}>\n        {data.title}\n      </h1>\n      <img\n        src={data.image}\n        alt={data.title}\n        {...getEditableProps(rawData, \"image\")}\n      />\n    </div>\n  );\n}"}
+    />
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Pour plus de détails, voir le <a href="/guides/live-preview" class="text-purple-600 dark:text-purple-400 hover:underline">guide Live Preview</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <Callout type="info">
+      Pour les commandes CLI Contentstack (auth, export/import, content types), voir le <a href="/guides/contentstack-cli" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">guide Contentstack CLI</a> et la page <a href="/resources/commands" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Commandes</a>.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://www.contentstack.com/docs"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation Contentstack</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://www.contentstack.com/docs/developers/apis/content-delivery-api"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Content Delivery API</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/stack/commercetools"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">CommerceTools</div>
+    </a>
+    <a
+      href="/stack/tailwind"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Tailwind CSS →</div>
+    </a>
+  </div>
+</DocsLayout>

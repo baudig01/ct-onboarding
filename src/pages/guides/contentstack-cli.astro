@@ -1,0 +1,449 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Contentstack CLI">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Contentstack CLI
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Guide des commandes CLI pour gérer vos content types et contenus Contentstack
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Installation
+    </h2>
+
+    <CodeBlock
+      title="Installation globale"
+      lang="bash"
+      code={`# Installer la CLI Contentstack
+npm install -g @contentstack/cli
+
+# Vérifier l'installation
+csdx --version`}
+    />
+
+    <Callout type="info" title="Prérequis">
+      Vous devez avoir Node.js 14+ installé sur votre machine.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Authentification
+    </h2>
+
+    <div class="space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          1. Login
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Se connecter à Contentstack
+csdx auth:login
+
+# La CLI va demander :
+# - Email
+# - Password
+# - Region (EU/US)`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          2. Lister les Stacks
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Voir tous les stacks disponibles
+csdx cm:stacks:list
+
+# Output exemple :
+# Stack Name       | UID            | Org UID
+# Nymphea Dev      | blt123...      | org456...
+# Nymphea Prod     | blt789...      | org456...`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          3. Logout
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Se déconnecter
+csdx auth:logout`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Export de Contenus
+    </h2>
+
+    <Callout type="success">
+      L'export permet de sauvegarder vos content types et entries localement pour backup ou migration.
+    </Callout>
+
+    <div class="mt-6 space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export Complet
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter tout le stack
+csdx cm:stacks:export --stack-api-key <API_KEY>
+
+# Avec options
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
+  --data-dir ./backup \\
+  --management-token-alias dev`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export Sélectif - Content Types Uniquement
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter uniquement les content types
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
+  --content-types \\
+  --data-dir ./content-types-backup`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export Sélectif - Content Types Spécifiques
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter uniquement certains content types
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
+  --content-types menu_visual_bloc,banner,page \\
+  --data-dir ./selected-types`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export avec Entries
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter content types + entries
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
+  --content-types \\
+  --entries \\
+  --data-dir ./full-backup`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Export avec Assets
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Exporter avec les assets (images, fichiers)
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
+  --content-types \\
+  --entries \\
+  --assets \\
+  --data-dir ./complete-backup`}
+        />
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Structure des Fichiers Exportés</h4>
+      <CodeBlock
+        lang="plaintext"
+        code={`backup/
+├── content_types/
+│   ├── banner.json
+│   ├── menu_visual_bloc.json
+│   └── page.json
+├── entries/
+│   ├── banner/
+│   │   ├── fr-FR/
+│   │   │   ├── entry1.json
+│   │   │   └── entry2.json
+│   └── menu_visual_bloc/
+│       └── fr-FR/
+│           └── etam_menu.json
+└── assets/
+    └── images/
+        ├── banner1.jpg
+        └── logo.png`}
+      />
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Import de Contenus
+    </h2>
+
+    <Callout type="warning">
+      Attention : l'import peut écraser des données existantes. Toujours faire un backup avant.
+    </Callout>
+
+    <div class="mt-6 space-y-6">
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Import Complet
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Importer tout depuis un backup
+csdx cm:stacks:import \\
+  --stack-api-key blt789 \\
+  --data-dir ./backup \\
+  --management-token-alias prod`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Import Content Types Uniquement
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Importer uniquement les schemas
+csdx cm:stacks:import \\
+  --stack-api-key blt789 \\
+  --data-dir ./backup \\
+  --content-types`}
+        />
+      </div>
+
+      <div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          Import avec Options
+        </h3>
+        <CodeBlock
+          lang="bash"
+          code={`# Import avancé
+csdx cm:stacks:import \\
+  --stack-api-key blt789 \\
+  --data-dir ./backup \\
+  --content-types \\
+  --entries \\
+  --assets \\
+  --replace-existing  # Écraser les entries existantes`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Migration entre Environnements
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800 mb-6">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">
+┌──────────────────────────────────────────────────────────┐
+│         MIGRATION DEV → STAGING → PROD                    │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+│  1. Export depuis DEV                                    │
+│     csdx cm:stacks:export --stack-api-key <dev-key>     │
+│                                                           │
+│  2. Vérifier les fichiers                               │
+│     ls -R ./backup                                       │
+│                                                           │
+│  3. Import vers STAGING                                  │
+│     csdx cm:stacks:import --stack-api-key <staging-key> │
+│                                                           │
+│  4. Tester sur STAGING                                   │
+│     https://staging.mysite.com                           │
+│                                                           │
+│  5. Import vers PROD                                     │
+│     csdx cm:stacks:import --stack-api-key <prod-key>    │
+│                                                           │
+└──────────────────────────────────────────────────────────┘
+      </pre>
+    </div>
+
+    <CodeBlock
+      title="Script de migration automatisé"
+      lang="bash"
+      code={`#!/bin/bash
+# migrate-content.sh
+
+# Variables
+DEV_KEY="blt_dev_key"
+STAGING_KEY="blt_staging_key"
+BACKUP_DIR="./migration-$(date +%Y%m%d)"
+
+# 1. Export depuis DEV
+echo "📦 Exporting from DEV..."
+csdx cm:stacks:export \\
+  --stack-api-key $DEV_KEY \\
+  --content-types \\
+  --entries \\
+  --data-dir $BACKUP_DIR
+
+# 2. Import vers STAGING
+echo "📥 Importing to STAGING..."
+csdx cm:stacks:import \\
+  --stack-api-key $STAGING_KEY \\
+  --data-dir $BACKUP_DIR \\
+  --replace-existing
+
+echo "✅ Migration complete!"`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Commandes Utiles
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Lister les Content Types</h3>
+        <CodeBlock
+          lang="bash"
+          code={`csdx cm:content-types:list --stack-api-key blt123`}
+        />
+      </div>
+
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Voir les Détails d'un Content Type</h3>
+        <CodeBlock
+          lang="bash"
+          code={`csdx cm:content-types:get --stack-api-key blt123 --uid menu_visual_bloc`}
+        />
+      </div>
+
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Lister les Environments</h3>
+        <CodeBlock
+          lang="bash"
+          code={`csdx cm:environments:list --stack-api-key blt123`}
+        />
+      </div>
+
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Publier des Entries</h3>
+        <CodeBlock
+          lang="bash"
+          code={`csdx cm:entries:publish \\
+  --stack-api-key blt123 \\
+  --content-type banner \\
+  --environment production \\
+  --locales fr-FR`}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Bonnes Pratiques
+    </h2>
+
+    <div class="space-y-4">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Backup régulier</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Faire un export complet avant toute modification importante
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Versionner les exports</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Utiliser Git pour tracker les changements de content types
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Tester sur staging</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Toujours importer sur staging avant la production
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">⚠️</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Attention à --replace-existing</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Cette option écrase les données existantes. Utiliser avec précaution.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://www.contentstack.com/docs/developers/cli"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation CLI</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://www.contentstack.com/docs/developers/cli/export-content-using-the-cli"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Export Guide</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/guides/live-preview"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Live Preview</div>
+    </a>
+    <a
+      href="/guides/methodology"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Méthodologie →</div>
+    </a>
+  </div>
+</DocsLayout>

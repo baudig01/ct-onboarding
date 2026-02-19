@@ -1,0 +1,306 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+---
+
+<DocsLayout title="Méthodologie d'Implémentation">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Méthodologie d'Implémentation
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Checklist et workflow pour implémenter une nouvelle feature de A à Z
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Vue d'Ensemble
+    </h2>
+
+    <div class="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">
+┌──────────────────────────────────────────────────────────┐
+│          WORKFLOW D'IMPLÉMENTATION                        │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+│  1. ANALYSE                                              │
+│     • Comprendre le besoin                               │
+│     • Identifier les sources de données                  │
+│     • Définir l'architecture                             │
+│                                                           │
+│  2. DATA LAYER                                           │
+│     • Types TypeScript (domain)                          │
+│     • API calls (api)                                    │
+│     • Services (services)                                │
+│                                                           │
+│  3. UI LAYER                                             │
+│     • Composants statiques                               │
+│     • Composants interactifs (Islands)                   │
+│     • Signals stores (si état partagé)                   │
+│                                                           │
+│  4. INTEGRATION                                          │
+│     • Pages Astro                                        │
+│     • API Routes (si mutations)                          │
+│     • Live Preview (si Contentstack)                     │
+│                                                           │
+│  5. TESTING & POLISH                                     │
+│     • Tests fonctionnels                                 │
+│     • Responsive design                                  │
+│     • Performance                                        │
+│                                                           │
+└──────────────────────────────────────────────────────────┘
+      </pre>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Phase 1 : Analyse
+    </h2>
+
+    <div class="space-y-6">
+      <div class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Questions à se poser
+        </h3>
+
+        <div class="space-y-4">
+          <div>
+            <h4 class="font-semibold text-purple-600 dark:text-purple-400 mb-2">1. Source de données</h4>
+            <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
+              <li>• CommerceTools ? (données transactionnelles)</li>
+              <li>• Contentstack ? (contenu éditorial)</li>
+              <li>• Les deux ?</li>
+              <li>• API externe ?</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-purple-600 dark:text-purple-400 mb-2">2. Pattern de fetch</h4>
+            <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
+              <li>• SSR (affichage initial) ?</li>
+              <li>• API Route (action utilisateur) ?</li>
+              <li>• Client-side (données dynamiques) ?</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-purple-600 dark:text-purple-400 mb-2">3. État partagé</h4>
+            <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
+              <li>• Plusieurs composants doivent accéder aux données ?</li>
+              <li>• Besoin d'un Signals store ?</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-purple-600 dark:text-purple-400 mb-2">4. Interactivité</h4>
+            <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
+              <li>• Quels composants doivent être interactifs ?</li>
+              <li>• Quelle stratégie d'hydratation ? (load/visible/idle)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Phase 2 : Data Layer
+    </h2>
+
+    <Callout type="info">
+      Toujours commencer par la couche de données avant l'UI. Cela garantit une architecture propre et testable.
+    </Callout>
+
+    <div class="mt-6 space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">1. Types (Domain)</h4>
+        <p class="text-sm text-blue-800 dark:text-blue-200">Interfaces TypeScript UI dans <code>lib/domain/</code> + mapper CT → UI</p>
+      </div>
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1">2. API Calls</h4>
+        <p class="text-sm text-green-800 dark:text-green-200">Fonctions HTTP brutes dans <code>lib/api/</code> (token admin, endpoints CT)</p>
+      </div>
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+        <h4 class="font-semibold text-purple-900 dark:text-purple-100 mb-1">3. Service Layer</h4>
+        <p class="text-sm text-purple-800 dark:text-purple-200">Orchestration API + Domain dans <code>lib/services/</code></p>
+      </div>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Voir le détail des couches sur la page <a href="/architecture/data-flow" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Flux de données → Couches d'Abstraction</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Phase 3 : UI Layer
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-l-4 border-orange-500">
+        <h4 class="font-semibold text-orange-900 dark:text-orange-100 mb-1">1. Signal Store (si état partagé)</h4>
+        <p class="text-sm text-orange-800 dark:text-orange-200">State + Computed + Actions async dans <code>lib/signals/*.store.ts</code></p>
+      </div>
+      <div class="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg border-l-4 border-pink-500">
+        <h4 class="font-semibold text-pink-900 dark:text-pink-100 mb-1">2. Composants UI</h4>
+        <p class="text-sm text-pink-800 dark:text-pink-200">Islands Preact (.tsx) dans <code>features/*/</code> avec accès direct aux signals</p>
+      </div>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Voir les exemples complets : <a href="/examples/signals" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Signals Stores</a> et <a href="/examples/components" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Composants</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Phase 4 : Intégration
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
+        <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">1. API Route (si mutations)</h4>
+        <p class="text-sm text-blue-800 dark:text-blue-200">Endpoint dans <code>pages/api/</code> qui valide, appelle le Service Layer, retourne JSON</p>
+      </div>
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+        <h4 class="font-semibold text-green-900 dark:text-green-100 mb-1">2. Page Astro</h4>
+        <p class="text-sm text-green-800 dark:text-green-200">SSR dans le frontmatter + Islands (<code>client:load</code> / <code>client:visible</code>) dans le template</p>
+      </div>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+      Voir les exemples complets : <a href="/examples/api-routes" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">API Routes</a> et <a href="/guides/data-fetching" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Récupération de données</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Phase 5 : Testing & Polish
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Tests Fonctionnels</h3>
+        <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+          <li>✓ Tester tous les cas d'usage (happy path)</li>
+          <li>✓ Tester les cas d'erreur (API down, network error)</li>
+          <li>✓ Tester les states de loading</li>
+        </ul>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Responsive Design</h3>
+        <ul class="text-sm text-green-800 dark:text-green-200 space-y-1">
+          <li>✓ Mobile (320px - 768px)</li>
+          <li>✓ Tablet (768px - 1024px)</li>
+          <li>✓ Desktop (1024px+)</li>
+        </ul>
+      </div>
+
+      <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 class="font-semibold text-purple-900 dark:text-purple-100 mb-2">Performance</h3>
+        <ul class="text-sm text-purple-800 dark:text-purple-200 space-y-1">
+          <li>✓ Vérifier la taille du bundle JavaScript</li>
+          <li>✓ Optimiser les images (format WebP, lazy loading)</li>
+          <li>✓ Utiliser client:visible pour les islands non critiques</li>
+        </ul>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Accessibilité</h3>
+        <ul class="text-sm text-yellow-800 dark:text-yellow-200 space-y-1">
+          <li>✓ Ajouter les attributs aria-*</li>
+          <li>✓ Tester la navigation au clavier</li>
+          <li>✓ Vérifier les contrastes de couleurs</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Checklist Complète
+    </h2>
+
+    <div class="space-y-3">
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Analyse : Questions répondues</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Domain : Types TypeScript définis</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">API : Fonctions de fetch créées</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Service : Orchestration implémentée</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Signals : Store créé (si nécessaire)</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">UI : Composants développés</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">API Routes : Endpoints créés (si mutations)</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Pages : Intégration dans Astro</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Tests : Fonctionnels validés</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Responsive : Mobile/Tablet/Desktop testés</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Performance : Bundle optimisé</span>
+      </label>
+
+      <label class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750">
+        <input type="checkbox" class="w-5 h-5 text-purple-600" />
+        <span class="text-gray-900 dark:text-white">Accessibilité : ARIA et navigation clavier</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/guides/contentstack-cli"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Contentstack CLI</div>
+    </a>
+    <a
+      href="/examples/components"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Exemples de Composants →</div>
+    </a>
+  </div>
+</DocsLayout>

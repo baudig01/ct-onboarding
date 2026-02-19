@@ -1,0 +1,548 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="CommerceTools">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    CommerceTools
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Plateforme e-commerce headless pour la gestion du catalogue, du panier et des commandes
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Qu'est-ce que CommerceTools ?
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-6">
+      CommerceTools est une solution e-commerce headless qui expose des APIs pour gérer tous les aspects transactionnels : produits, catégories, panier, commandes, clients, etc.
+    </p>
+
+    <Callout type="info">
+      En mode <strong>headless</strong>, CommerceTools ne fournit pas de front-end. C'est notre responsabilité de construire l'interface avec Astro/Preact.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Architecture d'Intégration
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      L'intégration CommerceTools passe par un <strong>BFF (Backend For Frontend)</strong> Node.js. Le front n'appelle jamais CommerceTools directement : il envoie des requêtes simples au BFF via <code>apiFetch()</code>, et le BFF gère toute la complexité CT (OAuth, actions, versioning).
+    </p>
+
+    <div class="p-4 rounded-lg border-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 mb-6">
+      <div class="font-bold text-orange-700 dark:text-orange-300 mb-2">Flux : Browser → BFF → CommerceTools</div>
+      <div class="text-xs font-mono text-orange-800 dark:text-orange-200 space-y-1">
+        <p>Browser (signal action)</p>
+        <p>&nbsp;&nbsp;→ lib/api/auth.ts ou lib/api/customer.ts</p>
+        <p>&nbsp;&nbsp;→ apiFetch() → BFF (PUBLIC_BFF_BASE_URL)</p>
+        <p>&nbsp;&nbsp;→ /auth/signin, /auth/signup, /customer/me...</p>
+      </div>
+    </div>
+
+    <div class="mt-6 p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border border-orange-200 dark:border-orange-600">
+      <pre class="text-sm font-mono text-gray-900 dark:text-white overflow-x-auto whitespace-pre !bg-transparent !p-0">{`┌──────────────────────────────────────────────────────┐
+│                   BROWSER (Client)                    │
+│                                                       │
+│   Composant Preact          Signal Store              │
+│   (LoginForm, Profile)      (auth.store.ts)           │
+│         │                        │                    │
+│         └────────►  login()  ◄───┘                    │
+│                       │                               │
+│              ┌────────▼──────────┐                    │
+│              │  lib/api/auth.ts  │                    │
+│              │  lib/api/customer │                    │
+│              │  → apiFetch()     │                    │
+│              └────────┬──────────┘                    │
+│                       │                               │
+└───────────────────────┼───────────────────────────────┘
+                        │
+                        ▼
+               ┌─────────────────────────┐
+               │   BFF (Node.js)         │
+               │   PUBLIC_BFF_BASE_URL   │
+               │   /auth/signin, /signup │
+               │   /auth/guest, /refresh │
+               │   /customer/me, /me/pw  │
+               └────────┬────────────────┘
+                        │
+                        ▼
+               ┌─────────────────────────┐
+               │   COMMERCETOOLS API     │
+               │   (customer token)      │
+               └─────────────────────────┘`}</pre>
+    </div>
+  </section>
+
+  <Callout type="info">
+    Pour comprendre les couches d'abstraction côté serveur (API Layer → Domain Layer → Service Layer), voir <a href="/architecture/data-flow" class="text-purple-600 dark:text-purple-400 underline hover:text-purple-800 dark:hover:text-purple-300">Flux de Données → Couches d'Abstraction</a>.
+  </Callout>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Concepts Importants
+    </h2>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Projects & Stores</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          Un projet CommerceTools peut avoir plusieurs stores (Etam, Undiz, Maison123). Chaque store a son catalogue, ses prix, et sa configuration.
+        </p>
+      </div>
+
+      <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Carts & Sessions</h3>
+        <p class="text-sm text-green-800 dark:text-green-200">
+          Les paniers sont identifiés par un cartId stocké en cookie. Un panier anonyme peut être converti en panier client après login.
+        </p>
+      </div>
+
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Versions & Concurrency</h3>
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+          CommerceTools utilise un système de versions pour gérer la concurrence. Chaque mise à jour nécessite la version actuelle de l'objet.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Intégration BFF (Auth & Customer)
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Le client appelle le <strong>BFF</strong> via <code>apiFetch()</code>. Le BFF abstrait toute la complexité CommerceTools (OAuth, actions, versioning). Le front envoie des données simples (champs plats) et reçoit des réponses propres.
+    </p>
+
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 mb-4">
+        <div class="text-sm font-mono text-orange-800 dark:text-orange-200 space-y-1">
+          <p><strong>Auth :</strong> signIn() → <code>POST /auth/signin</code> · signUp() → <code>PUT /auth/signup</code></p>
+          <p><strong>Customer :</strong> fetchMe() → <code>GET /customer/me</code> · updateCustomer() → <code>POST /customer/me</code></p>
+          <p><strong>Password :</strong> changePassword() → <code>PATCH /customer/me/password</code></p>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <!-- HTTP Client -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">1. HTTP Client (client-side)</h4>
+          <p class="text-gray-700 dark:text-gray-300 mb-2">
+            Toutes les requêtes BFF passent par un helper partagé qui gère le base URL et les erreurs :
+          </p>
+          <CodeBlock
+            title="lib/api/http-client.ts"
+            lang="typescript"
+            code={`const BASE_URL = import.meta.env.PUBLIC_BFF_BASE_URL || "http://localhost:3000";
+
+export class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(BASE_URL + endpoint, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await response.text());
+  }
+
+  if (response.status === 204) return undefined as T;
+  return response.json();
+}`}
+          />
+        </div>
+
+        <!-- API Auth -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">2. API Auth (appels BFF)</h4>
+          <p class="text-gray-700 dark:text-gray-300 mb-2">
+            Exemple concret tiré de <code>ct-web</code> — chaque fonction correspond à un endpoint BFF :
+          </p>
+          <CodeBlock
+            title="lib/api/auth.ts (ct-web)"
+            lang="typescript"
+            code={`import { apiFetch } from "./http-client";
+
+export interface SignInResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+}
+
+// POST /auth/signin → Connexion client
+export async function signIn(email: string, password: string): Promise<SignInResponse> {
+  return apiFetch<SignInResponse>("/auth/signin", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+// PUT /auth/signup → Inscription d'un nouveau client
+export async function signUp(data: {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}): Promise<void> {
+  await apiFetch("/auth/signup", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// POST /auth/guest → Token anonyme (visiteur non connecté)
+export async function guestToken(): Promise<GuestTokenResponse> {
+  return apiFetch<GuestTokenResponse>("/auth/guest", { method: "POST" });
+}
+
+// POST /auth/refresh → Rafraîchir un token expiré
+export async function refreshToken(token: string): Promise<SignInResponse> {
+  return apiFetch<SignInResponse>("/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({ refreshToken: token }),
+  });
+}
+
+// GET /auth/isEmailExists → Vérifier si un email est déjà utilisé
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const response = await apiFetch<{ isExists: boolean }>(
+    \`/auth/isEmailExists?email=\${encodeURIComponent(email)}\`
+  );
+  return response.isExists;
+}`}
+          />
+        </div>
+
+        <!-- API Customer -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">3. API Customer (appels BFF)</h4>
+          <p class="text-gray-700 dark:text-gray-300 mb-2">
+            Exemple concret tiré de <code>ct-web</code> — le BFF expose des endpoints simples avec des champs plats (pas d'actions CT) :
+          </p>
+          <CodeBlock
+            title="lib/api/customer.ts (ct-web)"
+            lang="typescript"
+            code={`import type { BFFCustomer } from "../domain/customer";
+import type { SignInResponse } from "./auth";
+import { apiFetch } from "./http-client";
+
+export interface UpdateCustomerData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  salutation?: string;
+}
+
+// GET /customer/me → Récupérer le profil du client connecté
+export async function fetchMe(accessToken: string): Promise<BFFCustomer> {
+  return apiFetch<BFFCustomer>("/customer/me", {
+    headers: { Authorization: \`Bearer \${accessToken}\` },
+  });
+}
+
+// POST /customer/me → Mettre à jour le profil (champs plats, pas d'actions CT)
+// Re-fetch automatique via GET /customer/me après update
+export async function updateCustomer(
+  accessToken: string,
+  data: UpdateCustomerData
+): Promise<BFFCustomer> {
+  await apiFetch("/customer/me", {
+    method: "POST",
+    headers: { Authorization: \`Bearer \${accessToken}\` },
+    body: JSON.stringify(data),
+  });
+  return fetchMe(accessToken);
+}
+
+// PATCH /customer/me/password → Changer le mot de passe
+export async function changePassword(
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<SignInResponse> {
+  return apiFetch<SignInResponse>("/customer/me/password", {
+    method: "PATCH",
+    headers: { Authorization: \`Bearer \${accessToken}\` },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}`}
+          />
+        </div>
+
+        <!-- Signal Store -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">4. Signal Store (orchestration client)</h4>
+          <p class="text-gray-700 dark:text-gray-300 mb-2">
+            Le signal store orchestre les appels API BFF et gère la session (token, customer, persistence localStorage). Exemple concret de <code>ct-web</code> :
+          </p>
+          <CodeBlock
+            title="lib/signals/auth.store.ts (ct-web)"
+            lang="typescript"
+            code={`import { signal, computed } from "@preact/signals";
+import { signIn, signUp, guestToken, refreshToken, checkEmailExists } from "../api/auth";
+import { fetchMe, updateCustomer, changePassword } from "../api/customer";
+
+// ── State ──────────────────────────────────────
+const session = signal<UserSession | GuestSession | null>(null);
+const loading = signal(false);
+const error = signal<string | null>(null);
+
+// ── Computed ───────────────────────────────────
+export const isLoggedIn = computed(() =>
+  session.value !== null && !("isGuest" in session.value)
+);
+export const accessToken = computed(() => session.value?.accessToken ?? null);
+
+// ── Actions ────────────────────────────────────
+
+// Connexion : POST /auth/signin → GET /customer/me
+export async function login(email: string, password: string): Promise<boolean> {
+  loading.value = true;
+  error.value = null;
+  try {
+    const tokens = await signIn(email, password);       // BFF: POST /auth/signin
+    const customer = await fetchMe(tokens.access_token); // BFF: GET /customer/me
+    session.value = {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: Date.now() + tokens.expires_in * 1000,
+      customer,
+    };
+    localStorage.setItem("nymphea_session", JSON.stringify(session.value));
+    return true;
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 400 || err.status === 401)) {
+      error.value = "invalid_credentials";
+    }
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Inscription : PUT /auth/signup
+export async function register(data: {
+  email: string; password: string; firstName?: string; lastName?: string;
+}): Promise<boolean> {
+  loading.value = true;
+  try {
+    await signUp(data);  // BFF: PUT /auth/signup
+    return true;
+  } catch (err) {
+    error.value = "signup_failed";
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Mise à jour profil : POST /customer/me → re-fetch GET /customer/me
+export async function updateProfile(data: UpdateCustomerData): Promise<boolean> {
+  const token = accessToken.value;
+  if (!token) return false;
+  try {
+    const customer = await updateCustomer(token, data); // BFF: POST /customer/me
+    // updateCustomer fait déjà un re-fetch via GET /customer/me
+    session.value = { ...session.value, customer };
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Refresh token si expire dans moins de 5 min
+export async function refreshIfNeeded(): Promise<boolean> {
+  const s = session.value;
+  if (!s || "isGuest" in s) return false;
+  if (s.expiresAt > Date.now() + 5 * 60 * 1000) return true;
+  const tokens = await refreshToken(s.refreshToken);  // BFF: POST /auth/refresh
+  const customer = await fetchMe(tokens.access_token); // BFF: GET /customer/me
+  // ... update session
+}`}
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Fichiers clés -->
+    <div class="mb-6">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        Fichiers clés
+      </h3>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="bg-gray-100 dark:bg-gray-800">
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Fichier</th>
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Rôle</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-700 dark:text-gray-300">
+            <tr class="border-t border-gray-200 dark:border-gray-700">
+              <td class="px-4 py-2 font-mono text-sm"><code>lib/api/http-client.ts</code></td>
+              <td class="px-4 py-2">Helper <code>apiFetch()</code> — base URL + gestion erreurs</td>
+            </tr>
+            <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <td class="px-4 py-2 font-mono text-sm"><code>lib/api/auth.ts</code></td>
+              <td class="px-4 py-2">signIn, signUp, guestToken, refreshToken, checkEmailExists</td>
+            </tr>
+            <tr class="border-t border-gray-200 dark:border-gray-700">
+              <td class="px-4 py-2 font-mono text-sm"><code>lib/api/customer.ts</code></td>
+              <td class="px-4 py-2">fetchMe, updateCustomer, changePassword</td>
+            </tr>
+            <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <td class="px-4 py-2 font-mono text-sm"><code>lib/signals/auth.store.ts</code></td>
+              <td class="px-4 py-2">Orchestration client — session, tokens, localStorage</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Routes BFF — Référence Complète
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Voici toutes les routes BFF utilisées dans <code>ct-web</code> pour l'authentification et la gestion customer :
+    </p>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <thead>
+          <tr class="bg-gray-100 dark:bg-gray-800">
+            <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Route</th>
+            <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Méthode</th>
+            <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Fonction JS</th>
+            <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Description</th>
+            <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Auth</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 dark:text-gray-300">
+          <tr class="border-t border-gray-200 dark:border-gray-700">
+            <td class="px-4 py-2 font-mono text-sm"><code>/auth/signin</code></td>
+            <td class="px-4 py-2"><code>POST</code></td>
+            <td class="px-4 py-2"><code>signIn(email, password)</code></td>
+            <td class="px-4 py-2">Connexion → retourne access_token + refresh_token</td>
+            <td class="px-4 py-2">Non</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <td class="px-4 py-2 font-mono text-sm"><code>/auth/signup</code></td>
+            <td class="px-4 py-2"><code>PUT</code></td>
+            <td class="px-4 py-2"><code>signUp(&#123; email, password, firstName?, lastName? &#125;)</code></td>
+            <td class="px-4 py-2">Inscription → crée le customer dans CT</td>
+            <td class="px-4 py-2">Non</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700">
+            <td class="px-4 py-2 font-mono text-sm"><code>/auth/guest</code></td>
+            <td class="px-4 py-2"><code>POST</code></td>
+            <td class="px-4 py-2"><code>guestToken()</code></td>
+            <td class="px-4 py-2">Token anonyme pour visiteur non connecté</td>
+            <td class="px-4 py-2">Non</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <td class="px-4 py-2 font-mono text-sm"><code>/auth/refresh</code></td>
+            <td class="px-4 py-2"><code>POST</code></td>
+            <td class="px-4 py-2"><code>refreshToken(token)</code></td>
+            <td class="px-4 py-2">Rafraîchir un token expiré</td>
+            <td class="px-4 py-2">Non</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700">
+            <td class="px-4 py-2 font-mono text-sm"><code>/auth/isEmailExists</code></td>
+            <td class="px-4 py-2"><code>GET</code></td>
+            <td class="px-4 py-2"><code>checkEmailExists(email)</code></td>
+            <td class="px-4 py-2">Vérifier si un email est déjà utilisé</td>
+            <td class="px-4 py-2">Non</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <td class="px-4 py-2 font-mono text-sm"><code>/customer/me</code></td>
+            <td class="px-4 py-2"><code>GET</code></td>
+            <td class="px-4 py-2"><code>fetchMe(accessToken)</code></td>
+            <td class="px-4 py-2">Récupérer le profil du client connecté</td>
+            <td class="px-4 py-2">Bearer token</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700">
+            <td class="px-4 py-2 font-mono text-sm"><code>/customer/me</code></td>
+            <td class="px-4 py-2"><code>POST</code></td>
+            <td class="px-4 py-2"><code>updateCustomer(token, data)</code></td>
+            <td class="px-4 py-2">Mettre à jour le profil (champs plats)</td>
+            <td class="px-4 py-2">Bearer token</td>
+          </tr>
+          <tr class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <td class="px-4 py-2 font-mono text-sm"><code>/customer/me/password</code></td>
+            <td class="px-4 py-2"><code>PATCH</code></td>
+            <td class="px-4 py-2"><code>changePassword(token, current, new)</code></td>
+            <td class="px-4 py-2">Changer le mot de passe → retourne nouveaux tokens</td>
+            <td class="px-4 py-2">Bearer token</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <Callout type="info">
+      <strong>Simplification clé du BFF :</strong> le front n'envoie jamais d'actions CommerceTools. Pour mettre à jour un profil, on envoie simplement <code>&#123; firstName: "Jean", lastName: "Dupont" &#125;</code> au BFF qui se charge de construire les actions CT (setFirstName, setLastName, etc.) côté serveur.
+    </Callout>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://docs.commercetools.com"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation CommerceTools</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://docs.commercetools.com/api"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">API Reference</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/stack/preact"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Preact & Signals</div>
+    </a>
+    <a
+      href="/stack/contentstack"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Contentstack →</div>
+    </a>
+  </div>
+</DocsLayout>

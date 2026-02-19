@@ -1,0 +1,156 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Astro - Framework SSR">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Astro
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Framework SSR avec Islands Architecture pour un bundle minimal et des performances optimales
+  </p>
+
+  <!-- Principe de base -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Principe de Base
+    </h2>
+
+    <Callout type="info">
+      Astro génère du <strong>HTML statique par défaut</strong>. L'interactivité est ajoutée uniquement là où c'est nécessaire via les Islands.
+    </Callout>
+
+    <p class="text-gray-700 dark:text-gray-300 mt-4">
+      Contrairement à React ou Vue qui rendent toute la page interactive, Astro permet de choisir précisément quels composants doivent être interactifs. Le reste est du HTML pur, ultra-rapide.
+    </p>
+  </section>
+
+  <!-- Anatomie d'une page Astro -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Anatomie d'une Page Astro
+    </h2>
+
+    <CodeBlock
+      title="src/pages/product/[id].astro"
+      lang="astro"
+      code={`---
+// === FRONTMATTER (exécuté côté serveur) ===
+import Layout from "../layouts/Layout.astro";
+import { getProductInStoreWithColors } from "../lib/services/product.service";
+import { ProductGallery } from "../features/product/components/ProductGallery";
+import { ProductInteractive } from "../features/product/components/ProductInteractive";
+
+// Récupération des paramètres URL
+const { id } = Astro.params;
+
+// Fetch des données côté serveur (SSR)
+const product = await getProductInStoreWithColors(id);
+
+if (!product) {
+  return Astro.redirect("/404");
+}
+---
+
+<!-- === TEMPLATE (HTML généré) === -->
+<Layout title={product.name}>
+  <!-- Composant statique (pas de JS) -->
+  <h1>{product.name}</h1>
+  <p>{product.description}</p>
+
+  <!-- Island : hydraté quand visible (lazy) -->
+  <ProductGallery
+    images={product.images}
+    client:visible
+  />
+
+  <!-- Island : hydraté immédiatement (critique) -->
+  <ProductInteractive
+    product={product}
+    client:load
+  />
+</Layout>`}
+    />
+
+    <div class="my-6 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Points clés :</h3>
+      <ul class="space-y-2 text-blue-800 dark:text-blue-200">
+        <li>• Le <strong>frontmatter</strong> (entre ---) s'exécute côté serveur uniquement</li>
+        <li>• Le <strong>template</strong> génère du HTML qui sera envoyé au client</li>
+        <li>• Les <strong>Islands</strong> ajoutent l'interactivité JavaScript de façon sélective</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Aller plus loin -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Aller Plus Loin
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a href="/architecture/data-flow" class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Flux de données</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">SSR, API Routes, BFF et couches d'abstraction</p>
+      </a>
+      <a href="/guides/data-fetching" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 hover:border-blue-500 transition-colors">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Patterns de fetch</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">SSR direct, API Routes, client-side fetching</p>
+      </a>
+      <a href="/architecture/islands" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:border-green-500 transition-colors">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Islands Architecture</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Directives d'hydratation et best practices</p>
+      </a>
+      <a href="/resources/commands" class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 hover:border-yellow-500 transition-colors">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Commandes utiles</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">dev, build, lint par marque</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Resources -->
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ressources
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <a
+        href="https://docs.astro.build"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Documentation Astro</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+      <a
+        href="https://docs.astro.build/en/concepts/islands/"
+        target="_blank"
+        class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors flex items-center justify-between"
+      >
+        <span class="font-medium">Islands Architecture</span>
+        <span class="text-gray-400">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/architecture/overview"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Architecture Overview</div>
+    </a>
+    <a
+      href="/stack/preact"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Preact & Signals →</div>
+    </a>
+  </div>
+</DocsLayout>

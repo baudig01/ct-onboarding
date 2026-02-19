@@ -1,0 +1,666 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Callout from '../../components/Callout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout title="Exemples Signals Stores">
+  <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+    Exemples de Signals Stores
+  </h1>
+  <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
+    Patterns de state management avec Preact Signals pour partager l'état entre composants
+  </p>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Structure d'un Store
+    </h2>
+
+    <Callout type="info">
+      Un store Signals est organisé en <strong>3 parties distinctes</strong>, chacune avec un rôle précis :
+    </Callout>
+
+    <div class="mt-6 grid gap-4 sm:grid-cols-3 mb-8">
+      <!-- State -->
+      <div class="p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+        <div class="text-lg font-bold text-blue-700 dark:text-blue-300 mb-2">🔵 State</div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Les données brutes réactives</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          Créés avec <code>signal()</code>. Ce sont les valeurs source de vérité du store.
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 italic">
+          Quand l'utiliser : pour stocker les données provenant de l'API ou de l'utilisateur (le panier, le user connecté, un loading, une erreur...).
+        </p>
+      </div>
+
+      <!-- Computed -->
+      <div class="p-4 rounded-lg border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+        <div class="text-lg font-bold text-green-700 dark:text-green-300 mb-2">🟢 Computed</div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Les valeurs dérivées automatiques</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          Créés avec <code>computed()</code>. Se recalculent automatiquement quand un signal source change.
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 italic">
+          Quand l'utiliser : pour des calculs basés sur le state (total du panier, nombre d'items, est-ce que le panier est vide, nom complet de l'utilisateur...).
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="p-4 rounded-lg border-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+        <div class="text-lg font-bold text-orange-700 dark:text-orange-300 mb-2">🟠 Actions</div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Les fonctions qui modifient l'état</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          Des fonctions exportées qui encapsulent la logique métier et les appels API.
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-500 italic">
+          Quand l'utiliser : pour toute modification du state (ajouter au panier, se connecter, changer un filtre...). Jamais modifier un signal directement depuis un composant.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <CodeBlock
+        title="lib/signals/cart.store.ts - Template complet"
+        lang="typescript"
+        code={`import { signal, computed } from "@preact/signals";
+import type { Cart } from "../domain/cart";
+
+// =============================================================================
+// STATE - Valeurs réactives primitives
+// =============================================================================
+
+export const cart = signal<Cart | null>(null);
+export const loading = signal<boolean>(false);
+export const error = signal<string | null>(null);
+
+// =============================================================================
+// COMPUTED - Valeurs dérivées (recalculées automatiquement)
+// =============================================================================
+
+export const totalQuantity = computed((): number => {
+  if (!cart.value) return 0;
+  return cart.value.items.reduce((sum, item) => sum + item.quantity, 0);
+});
+
+export const totalPrice = computed((): number => {
+  if (!cart.value) return 0;
+  return cart.value.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+});
+
+export const isEmpty = computed((): boolean => {
+  return totalQuantity.value === 0;
+});
+
+// =============================================================================
+// ACTIONS - Fonctions qui modifient l'état
+// =============================================================================
+
+export async function addToCart(data: {
+  productId: string;
+  variantId: string;
+  quantity: number;
+}): Promise<boolean> {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const res = await fetch("/api/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      error.value = result.error;
+      return false;
+    }
+
+    cart.value = result.cart;
+    return true;
+  } catch (err) {
+    error.value = "network_error";
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+export async function removeFromCart(lineItemId: string): Promise<boolean> {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const res = await fetch("/api/cart/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lineItemId }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      error.value = result.error;
+      return false;
+    }
+
+    cart.value = result.cart;
+    return true;
+  } catch (err) {
+    error.value = "network_error";
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+export async function updateQuantity(
+  lineItemId: string,
+  quantity: number
+): Promise<boolean> {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const res = await fetch("/api/cart/update-quantity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lineItemId, quantity }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      error.value = result.error;
+      return false;
+    }
+
+    cart.value = result.cart;
+    return true;
+  } catch (err) {
+    error.value = "network_error";
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}`}
+      />
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 1 : Wishlist Store
+    </h2>
+
+    <CodeBlock
+      title="lib/signals/wishlist.store.ts"
+      lang="typescript"
+      code={`import { signal, computed } from "@preact/signals";
+import type { WishlistItem } from "../domain/wishlist";
+
+// State
+export const items = signal<WishlistItem[]>([]);
+export const loading = signal(false);
+
+// Computed
+export const totalItems = computed(() => items.value.length);
+
+export const hasItem = (productId: string) =>
+  computed(() => items.value.some((item) => item.productId === productId));
+
+// Actions
+export async function addToWishlist(
+  productId: string,
+  variantId: string
+): Promise<boolean> {
+  loading.value = true;
+
+  try {
+    const res = await fetch("/api/wishlist/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId, variantId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) return false;
+
+    items.value = data.items;
+    return true;
+  } catch {
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+export async function removeFromWishlist(productId: string): Promise<boolean> {
+  loading.value = true;
+
+  try {
+    const res = await fetch("/api/wishlist/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) return false;
+
+    items.value = data.items;
+    return true;
+  } catch {
+    return false;
+  } finally {
+    loading.value = false;
+  }
+}
+
+export async function toggleWishlist(
+  productId: string,
+  variantId: string
+): Promise<boolean> {
+  const isInWishlist = items.value.some((item) => item.productId === productId);
+
+  if (isInWishlist) {
+    return removeFromWishlist(productId);
+  } else {
+    return addToWishlist(productId, variantId);
+  }
+}`}
+    />
+
+    <div class="mt-6">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+        Utilisation dans un Composant
+      </h3>
+      <CodeBlock
+        title="features/wishlist/WishlistButton.tsx"
+        lang="tsx"
+        code={`import { toggleWishlist, hasItem, loading } from "../../lib/signals/wishlist.store";
+
+interface Props {
+  productId: string;
+  variantId: string;
+}
+
+export function WishlistButton({ productId, variantId }: Props) {
+  const isInWishlist = hasItem(productId);
+
+  const handleClick = async () => {
+    await toggleWishlist(productId, variantId);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading.value}
+      class={\`
+        p-2 rounded-lg transition-colors
+        \${isInWishlist.value
+          ? "text-red-600 hover:text-red-700"
+          : "text-gray-400 hover:text-gray-600"
+        }
+      \`}
+      title={isInWishlist.value ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
+    >
+      {isInWishlist.value ? "❤️" : "♡"}
+    </button>
+  );
+}`}
+      />
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 2 : Auth Store (BFF)
+    </h2>
+
+    <Callout type="info">
+      L'authentification passe par le <strong>BFF</strong> (pas d'API Route Astro). Le signal store appelle directement <code>lib/api/auth.ts</code> et <code>lib/api/customer.ts</code> via <code>apiFetch()</code>.
+    </Callout>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      Le Auth Store suit exactement le même pattern State / Computed / Actions, mais les actions appellent le <strong>BFF</strong> au lieu d'API Routes Astro :
+    </p>
+
+    <CodeBlock
+      title="lib/signals/auth.store.ts — Pattern résumé"
+      lang="typescript"
+      code={`import { signal, computed } from "@preact/signals";
+import { signIn, signUp, refreshToken } from "../api/auth";
+import { fetchMe, updateCustomer } from "../api/customer";
+
+// ── State ──────────────────────────────────────
+const session = signal<UserSession | GuestSession | null>(null);
+const loading = signal(false);
+const error = signal<string | null>(null);
+
+// ── Computed ───────────────────────────────────
+export const isLoggedIn = computed(() =>
+  session.value !== null && !("isGuest" in session.value)
+);
+export const accessToken = computed(() => session.value?.accessToken ?? null);
+
+// ── Actions ────────────────────────────────────
+
+// Connexion : signIn() + fetchMe() → session signal + localStorage
+export async function login(email: string, password: string): Promise<boolean> { ... }
+
+// Inscription : signUp() → BFF: PUT /auth/signup
+export async function register(data: { email: string; password: string; ... }): Promise<boolean> { ... }
+
+// Mise à jour profil : updateCustomer() → BFF: POST /customer/me
+export async function updateProfile(data: UpdateCustomerData): Promise<boolean> { ... }
+
+// Refresh token : refreshToken() → BFF: POST /auth/refresh
+export async function refreshIfNeeded(): Promise<boolean> { ... }
+
+// Déconnexion : clear signal + localStorage
+export function logout(): void {
+  session.value = null;
+  localStorage.removeItem("nymphea_session");
+}`}
+    />
+
+    <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+      Voir le <strong>code complet</strong> de chaque action (login, register, updateProfile, refreshIfNeeded) et de toutes les routes BFF sur la page <a href="/stack/commercetools" class="text-orange-600 dark:text-orange-400 underline hover:text-orange-800 dark:hover:text-orange-300">CommerceTools → Pattern B &amp; Routes BFF</a>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 3 : UI State Store
+    </h2>
+
+    <Callout type="success">
+      Les stores peuvent aussi gérer l'état de l'UI (modals, sidebars, etc.)
+    </Callout>
+
+    <CodeBlock
+      title="lib/signals/ui.store.ts"
+      lang="typescript"
+      code={`import { signal } from "@preact/signals";
+
+// Mobile menu
+export const isMobileMenuOpen = signal(false);
+
+export function toggleMobileMenu() {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+}
+
+export function closeMobileMenu() {
+  isMobileMenuOpen.value = false;
+}
+
+// Search modal
+export const isSearchOpen = signal(false);
+
+export function openSearch() {
+  isSearchOpen.value = true;
+}
+
+export function closeSearch() {
+  isSearchOpen.value = false;
+}
+
+// Filter sidebar
+export const isFilterOpen = signal(false);
+
+export function toggleFilter() {
+  isFilterOpen.value = !isFilterOpen.value;
+}
+
+// Toast notifications
+export interface Toast {
+  id: string;
+  type: "success" | "error" | "info";
+  message: string;
+}
+
+export const toasts = signal<Toast[]>([]);
+
+export function addToast(type: Toast["type"], message: string) {
+  const id = Date.now().toString();
+  toasts.value = [...toasts.value, { id, type, message }];
+
+  // Auto-remove after 3s
+  setTimeout(() => {
+    removeToast(id);
+  }, 3000);
+}
+
+export function removeToast(id: string) {
+  toasts.value = toasts.value.filter((toast) => toast.id !== id);
+}`}
+    />
+
+    <div class="mt-6">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+        Utilisation pour les Toasts
+      </h3>
+      <CodeBlock
+        title="components/ToastContainer.tsx"
+        lang="tsx"
+        code={`import { toasts, removeToast } from "../lib/signals/ui.store";
+
+export function ToastContainer() {
+  return (
+    <div class="fixed bottom-4 right-4 z-50 space-y-2">
+      {toasts.value.map((toast) => (
+        <div
+          key={toast.id}
+          class={\`
+            px-4 py-3 rounded-lg shadow-lg flex items-center gap-3
+            animate-slide-in-right
+            \${toast.type === "success" && "bg-green-600 text-white"}
+            \${toast.type === "error" && "bg-red-600 text-white"}
+            \${toast.type === "info" && "bg-blue-600 text-white"}
+          \`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => removeToast(toast.id)}
+            class="ml-2 hover:opacity-75"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Utilisation dans une action
+import { addToast } from "../lib/signals/ui.store";
+
+async function handleSomething() {
+  const success = await doSomething();
+
+  if (success) {
+    addToast("success", "Action réussie !");
+  } else {
+    addToast("error", "Une erreur est survenue");
+  }
+}`}
+      />
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Exemple 4 : Filters Store
+    </h2>
+
+    <CodeBlock
+      title="lib/signals/filters.store.ts"
+      lang="typescript"
+      code={`import { signal, computed } from "@preact/signals";
+
+// State
+export const selectedCategories = signal<string[]>([]);
+export const selectedSizes = signal<string[]>([]);
+export const selectedColors = signal<string[]>([]);
+export const priceRange = signal<[number, number]>([0, 1000]);
+export const sortBy = signal<"price-asc" | "price-desc" | "newest">("newest");
+
+// Computed
+export const activeFiltersCount = computed(() => {
+  return (
+    selectedCategories.value.length +
+    selectedSizes.value.length +
+    selectedColors.value.length +
+    (priceRange.value[0] > 0 || priceRange.value[1] < 1000 ? 1 : 0)
+  );
+});
+
+export const hasActiveFilters = computed(() => activeFiltersCount.value > 0);
+
+// Actions
+export function toggleCategory(categoryId: string) {
+  const current = selectedCategories.value;
+  if (current.includes(categoryId)) {
+    selectedCategories.value = current.filter((id) => id !== categoryId);
+  } else {
+    selectedCategories.value = [...current, categoryId];
+  }
+}
+
+export function toggleSize(size: string) {
+  const current = selectedSizes.value;
+  if (current.includes(size)) {
+    selectedSizes.value = current.filter((s) => s !== size);
+  } else {
+    selectedSizes.value = [...current, size];
+  }
+}
+
+export function toggleColor(color: string) {
+  const current = selectedColors.value;
+  if (current.includes(color)) {
+    selectedColors.value = current.filter((c) => c !== color);
+  } else {
+    selectedColors.value = [...current, color];
+  }
+}
+
+export function setPriceRange(min: number, max: number) {
+  priceRange.value = [min, max];
+}
+
+export function setSortBy(sort: typeof sortBy.value) {
+  sortBy.value = sort;
+}
+
+export function clearAllFilters() {
+  selectedCategories.value = [];
+  selectedSizes.value = [];
+  selectedColors.value = [];
+  priceRange.value = [0, 1000];
+  sortBy.value = "newest";
+}
+
+export function clearFilter(type: "category" | "size" | "color" | "price") {
+  switch (type) {
+    case "category":
+      selectedCategories.value = [];
+      break;
+    case "size":
+      selectedSizes.value = [];
+      break;
+    case "color":
+      selectedColors.value = [];
+      break;
+    case "price":
+      priceRange.value = [0, 1000];
+      break;
+  }
+}`}
+    />
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Bonnes Pratiques
+    </h2>
+
+    <div class="space-y-4">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Un store = une responsabilité</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Séparer cart.store, wishlist.store, user.store plutôt qu'un gros store global
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Computed pour les valeurs dérivées</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Toujours utiliser computed() plutôt que recalculer manuellement
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Actions async avec try/catch</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Toujours gérer les erreurs et les states loading
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">✅</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">TypeScript strict</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Typer les signals et les actions pour éviter les bugs
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 text-2xl">❌</div>
+        <div>
+          <strong class="text-gray-900 dark:text-white">Ne jamais muter directement</strong>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Utiliser <code>.value =</code> plutôt que de modifier l'objet en place
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div class="flex gap-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+    <a
+      href="/examples/components"
+      class="flex-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">← Précédent</div>
+      <div class="font-semibold text-gray-900 dark:text-white">Composants</div>
+    </a>
+    <a
+      href="/examples/api-routes"
+      class="flex-1 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-colors"
+    >
+      <div class="text-sm text-purple-600 dark:text-purple-400 mb-1">Suivant</div>
+      <div class="font-semibold text-gray-900 dark:text-white">API Routes →</div>
+    </a>
+  </div>
+</DocsLayout>
