@@ -2,6 +2,50 @@
 import DocsLayout from '../../layouts/DocsLayout.astro';
 import Callout from '../../components/Callout.astro';
 import CodeBlock from '../../components/CodeBlock.astro';
+
+const astroPageExample = `---
+import Layout from "../layouts/Layout.astro";
+import { getHomePageEntry } from "../lib/services/content.service";
+import { getPreviewContext } from "../lib/api/contentstack";
+import HomePageContent from "../features/homepage/HomePageContent";
+import { getBrandConfig } from "../config/brands";
+import { getContentstackEnv } from "../utils/contentstack-env";
+
+// SSR obligatoire pour le Live Preview (pas de prerender statique)
+${"export const prerender = false;"}
+
+// 1. Détecter si on est en mode preview (Visual Builder)
+//    → isPreview = true si ?live_preview=... dans l'URL ou PUBLIC_IS_PREVIEW=true
+//    → previewParams = les query params pour la Preview API (draft content)
+const { isPreview, previewParams } = getPreviewContext(Astro.url);
+const brandConfig = getBrandConfig();
+const brand = brandConfig.id;
+
+// 2. Fetch l'entry HomePage, filtrée par brand via taxonomy
+//    → En prod : Delivery API (contenu publié, caché)
+//    → En preview : Preview API (contenu draft, grâce à previewParams)
+const homeEntry = await getHomePageEntry({ previewParams });
+
+// SEO : valeurs CMS avec fallback sur la config brand
+const seoTitle = homeEntry?.seo?.seo_title ?? brandConfig.seo.title;
+const seoDescription = homeEntry?.seo?.seo_description ?? brandConfig.seo.description;
+
+// 3. Config Contentstack pour le client (apiKey, tokens, region...)
+//    → Uniquement en preview : le composant client en a besoin pour initialiser le SDK
+//    → En prod : undefined → le composant utilise juste initialData, pas de SDK
+const csConfig = isPreview ? getContentstackEnv() : undefined;
+---
+
+<Layout title={seoTitle} description={seoDescription} headerTransparent={true}>
+  <!-- 4. Passer toutes les props nécessaires au composant Preact -->
+  <HomePageContent
+    brand={brand}
+    isPreview={isPreview}
+    initialData={homeEntry}
+    csConfig={csConfig}
+    client:load
+  />
+</Layout>`;
 ---
 
 <DocsLayout title="Contentstack CMS">
@@ -460,49 +504,7 @@ export async function getFooterLinksData(
         <CodeBlock
           title="pages/index.astro - Page d'accueil"
           lang="astro"
-          code={`---
-import Layout from "../layouts/Layout.astro";
-import { getHomePageEntry } from "../lib/services/content.service";
-import { getPreviewContext } from "../lib/api/contentstack";
-import HomePageContent from "../features/homepage/HomePageContent";
-import { getBrandConfig } from "../config/brands";
-import { getContentstackEnv } from "../utils/contentstack-env";
-
-// SSR obligatoire pour le Live Preview (pas de prerender statique)
-export const prerender = false;
-
-// 1. Détecter si on est en mode preview (Visual Builder)
-//    → isPreview = true si ?live_preview=... dans l'URL ou PUBLIC_IS_PREVIEW=true
-//    → previewParams = les query params pour la Preview API (draft content)
-const { isPreview, previewParams } = getPreviewContext(Astro.url);
-const brandConfig = getBrandConfig();
-const brand = brandConfig.id;
-
-// 2. Fetch l'entry HomePage, filtrée par brand via taxonomy
-//    → En prod : Delivery API (contenu publié, caché)
-//    → En preview : Preview API (contenu draft, grâce à previewParams)
-const homeEntry = await getHomePageEntry({ previewParams });
-
-// SEO : valeurs CMS avec fallback sur la config brand
-const seoTitle = homeEntry?.seo?.seo_title ?? brandConfig.seo.title;
-const seoDescription = homeEntry?.seo?.seo_description ?? brandConfig.seo.description;
-
-// 3. Config Contentstack pour le client (apiKey, tokens, region...)
-//    → Uniquement en preview : le composant client en a besoin pour initialiser le SDK
-//    → En prod : undefined → le composant utilise juste initialData, pas de SDK
-const csConfig = isPreview ? getContentstackEnv() : undefined;
----
-
-<Layout title={seoTitle} description={seoDescription} headerTransparent={true}>
-  <!-- 4. Passer toutes les props nécessaires au composant Preact -->
-  <HomePageContent
-    brand={brand}
-    isPreview={isPreview}
-    initialData={homeEntry}
-    csConfig={csConfig}
-    client:load
-  />
-</Layout>`}
+          code={astroPageExample}
         />
 
         <!-- Explication des 4 props -->
