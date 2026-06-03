@@ -92,6 +92,10 @@ csdx auth:logout`}
       L'export permet de sauvegarder vos content types et entries localement pour backup ou migration.
     </Callout>
 
+    <Callout type="info" title="À propos de --module">
+      Pour un export sélectif, utilisez <strong>--module</strong> suivi d'un seul nom de module : <code>content-types</code>, <code>entries</code>, <code>assets</code>, <code>global-fields</code>, <code>environments</code>, <code>locales</code>, etc. Si vous omettez <strong>--module</strong>, tous les modules sont exportés. Il n'existe pas de flags <code>--entries</code> ni <code>--assets</code>.
+    </Callout>
+
     <div class="mt-6 space-y-6">
       <div>
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
@@ -102,11 +106,10 @@ csdx auth:logout`}
           code={`# Exporter tout le stack
 csdx cm:stacks:export --stack-api-key <API_KEY>
 
-# Avec options
+# Avec un alias de management token (au lieu de --stack-api-key)
 csdx cm:stacks:export \\
-  --stack-api-key blt123456 \\
-  --data-dir ./backup \\
-  --management-token-alias dev`}
+  --alias dev \\
+  --data-dir ./backup`}
         />
       </div>
 
@@ -116,10 +119,10 @@ csdx cm:stacks:export \\
         </h3>
         <CodeBlock
           lang="bash"
-          code={`# Exporter uniquement les content types
+          code={`# Exporter uniquement le module content types
 csdx cm:stacks:export \\
   --stack-api-key blt123456 \\
-  --content-types \\
+  --module content-types \\
   --data-dir ./content-types-backup`}
         />
       </div>
@@ -131,9 +134,11 @@ csdx cm:stacks:export \\
         <CodeBlock
           lang="bash"
           code={`# Exporter uniquement certains content types
+# (UIDs séparés par des ESPACES, pas des virgules)
 csdx cm:stacks:export \\
   --stack-api-key blt123456 \\
-  --content-types menu_visual_bloc,banner,page \\
+  --module content-types \\
+  --content-types menu_visual_bloc banner page \\
   --data-dir ./selected-types`}
         />
       </div>
@@ -144,11 +149,10 @@ csdx cm:stacks:export \\
         </h3>
         <CodeBlock
           lang="bash"
-          code={`# Exporter content types + entries
+          code={`# Exporter uniquement le module entries
 csdx cm:stacks:export \\
   --stack-api-key blt123456 \\
-  --content-types \\
-  --entries \\
+  --module entries \\
   --data-dir ./full-backup`}
         />
       </div>
@@ -159,12 +163,16 @@ csdx cm:stacks:export \\
         </h3>
         <CodeBlock
           lang="bash"
-          code={`# Exporter avec les assets (images, fichiers)
+          code={`# Exporter uniquement le module assets (images, fichiers)
 csdx cm:stacks:export \\
   --stack-api-key blt123456 \\
-  --content-types \\
-  --entries \\
-  --assets \\
+  --module assets \\
+  --data-dir ./complete-backup
+
+# Pour TOUT exporter (content types + entries + assets + ...),
+# il suffit d'omettre --module :
+csdx cm:stacks:export \\
+  --stack-api-key blt123456 \\
   --data-dir ./complete-backup`}
         />
       </div>
@@ -214,8 +222,12 @@ csdx cm:stacks:export \\
           code={`# Importer tout depuis un backup
 csdx cm:stacks:import \\
   --stack-api-key blt789 \\
-  --data-dir ./backup \\
-  --management-token-alias prod`}
+  --data-dir ./backup
+
+# Ou avec un alias de management token
+csdx cm:stacks:import \\
+  --alias prod \\
+  --data-dir ./backup`}
         />
       </div>
 
@@ -225,11 +237,11 @@ csdx cm:stacks:import \\
         </h3>
         <CodeBlock
           lang="bash"
-          code={`# Importer uniquement les schemas
+          code={`# Importer uniquement les schemas (module content-types)
 csdx cm:stacks:import \\
   --stack-api-key blt789 \\
   --data-dir ./backup \\
-  --content-types`}
+  --module content-types`}
         />
       </div>
 
@@ -239,13 +251,10 @@ csdx cm:stacks:import \\
         </h3>
         <CodeBlock
           lang="bash"
-          code={`# Import avancé
+          code={`# Import complet en écrasant les entries/assets existants
 csdx cm:stacks:import \\
   --stack-api-key blt789 \\
   --data-dir ./backup \\
-  --content-types \\
-  --entries \\
-  --assets \\
   --replace-existing  # Écraser les entries existantes`}
         />
       </div>
@@ -293,12 +302,10 @@ DEV_KEY="blt_dev_key"
 STAGING_KEY="blt_staging_key"
 BACKUP_DIR="./migration-$(date +%Y%m%d)"
 
-# 1. Export depuis DEV
+# 1. Export depuis DEV (export complet : tous les modules)
 echo "📦 Exporting from DEV..."
 csdx cm:stacks:export \\
   --stack-api-key $DEV_KEY \\
-  --content-types \\
-  --entries \\
   --data-dir $BACKUP_DIR
 
 # 2. Import vers STAGING
